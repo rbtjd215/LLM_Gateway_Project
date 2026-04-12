@@ -1,0 +1,25 @@
+# Web Framework
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+
+# Database ORM (제약사항 4: SQLAlchemy 강제)
+sqlalchemy==2.0.30
+psycopg2-binary==2.9.9
+
+# Redis (마스킹 토큰 인메모리 저장 - B 모듈 연동 시 사용)
+redis==5.0.4
+
+# JWT 인증
+python-jose[cryptography]==3.3.0
+
+# 비밀번호 해싱 (현재 단순 비교, 추후 bcrypt 활성화)
+passlib[bcrypt]==1.7.4
+
+# 환경 변수
+python-dotenv==1.0.1
+
+# Form 데이터 파싱
+python-multipart==0.0.9
+
+# 데이터 검증
+pydantic==2.7.1

@@ -1,0 +1,754 @@
+"""
+frontend/app.py
+────────────────────────────────────────────────────────────────────────────
+[팀원 A] 오토코어 AI 보안 게이트웨이 — Streamlit 프론트엔드
+
+실행 방법:
+    cd frontend
+    pip install -r requirements.txt
+    streamlit run app.py
+
+백엔드 통신: http://localhost:8000  (팀원 C의 FastAPI 서버)
+보안 모듈  : 팀원 B의 security_core.py가 백엔드 /chat에 통합된 상태
+────────────────────────────────────────────────────────────────────────────
+"""
+
+import streamlit as st
+import requests
+import pandas as pd
+from typing import Optional
+
+# ── 상수 ─────────────────────────────────────────────────────────────────
+API_BASE = "http://localhost:8000"
+
+# ══════════════════════════════════════════════════════════════════════════
+#  페이지 설정 (반드시 최상단, 다른 st 호출 전에 위치)
+# ══════════════════════════════════════════════════════════════════════════
+st.set_page_config(
+    page_title="AutoCore AI Security Gateway",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  커스텀 CSS — 프리미엄 다크 테마
+# ══════════════════════════════════════════════════════════════════════════
+def inject_css() -> None:
+    st.markdown("""
+    <style>
+    /* ── 전역 배경 ── */
+    [data-testid="stAppViewContainer"] {
+        background: linear-gradient(135deg, #060b18 0%, #0d1b2e 50%, #071120 100%);
+        min-height: 100vh;
+    }
+    [data-testid="stHeader"] { background: transparent; }
+
+    /* ── 사이드바 ── */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0b1628 0%, #0f2040 100%);
+        border-right: 1px solid rgba(0, 180, 255, 0.15);
+    }
+    [data-testid="stSidebar"] * { color: #c8d8f0 !important; }
+
+    /* ── 로그인 카드 ── */
+    .login-card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(0, 180, 255, 0.2);
+        border-radius: 20px;
+        padding: 2.5rem 3rem;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 8px 40px rgba(0,0,0,0.5),
+                    0 0 60px rgba(0,100,220,0.08);
+        max-width: 480px;
+        margin: 0 auto;
+    }
+    .brand-logo {
+        font-size: 2.2rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #00b4ff, #0066ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+        margin-bottom: 0.2rem;
+    }
+    .brand-sub {
+        color: #5580a8;
+        font-size: 0.82rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 2rem;
+    }
+
+    /* ── 섹션 헤더 ── */
+    .section-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #e8f0ff;
+        margin-bottom: 0.4rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(0,180,255,0.15);
+    }
+
+    /* ── 메트릭 카드 ── */
+    .metric-card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(0, 180, 255, 0.15);
+        border-radius: 14px;
+        padding: 1.2rem 1.4rem;
+        text-align: center;
+        transition: border-color 0.3s;
+    }
+    .metric-card:hover { border-color: rgba(0,180,255,0.4); }
+    .metric-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin: 0;
+    }
+    .metric-label {
+        font-size: 0.78rem;
+        color: #7090b0;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-top: 0.3rem;
+    }
+    .metric-blocked  { color: #ff5c7a; }
+    .metric-masked   { color: #f0b429; }
+    .metric-allowed  { color: #22d6a5; }
+    .metric-total    { color: #00b4ff; }
+
+    /* ── 보안 차단 배너 ── */
+    .block-banner {
+        background: rgba(255, 30, 60, 0.1);
+        border: 1px solid rgba(255, 60, 80, 0.4);
+        border-left: 4px solid #ff3c50;
+        border-radius: 10px;
+        padding: 0.9rem 1.2rem;
+        margin: 0.5rem 0;
+        color: #ff8095;
+        font-size: 0.92rem;
+    }
+
+    /* ── 채팅 말풍선 ── */
+    .bubble-row-user {
+        display: flex;
+        justify-content: flex-end;
+        margin: 0.1rem 0 0.6rem;
+    }
+    .bubble-row-assistant {
+        display: flex;
+        justify-content: flex-start;
+        margin: 0.1rem 0 0.6rem;
+    }
+    .chat-bubble-user {
+        background: linear-gradient(135deg, rgba(0,90,210,0.45), rgba(0,140,255,0.25));
+        border: 1px solid rgba(60,160,255,0.35);
+        border-radius: 18px 4px 18px 18px;
+        padding: 0.65rem 1.05rem;
+        max-width: 72%;
+        color: #cce4ff;
+        font-size: 0.92rem;
+        line-height: 1.55;
+        word-break: break-word;
+    }
+    .chat-bubble-assistant {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(200,220,255,0.12);
+        border-radius: 4px 18px 18px 18px;
+        padding: 0.65rem 1.05rem;
+        max-width: 72%;
+        color: #d8eaff;
+        font-size: 0.92rem;
+        line-height: 1.55;
+        word-break: break-word;
+    }
+
+    /* 채팅 입력창 텍스트 색상 → Streamlit 순정 테마 엔진에 위임 (커스텀 CSS 없음) */
+
+    /* ── 상태 배지 ── */
+    .badge {
+        display: inline-block;
+        padding: 0.2rem 0.7rem;
+        border-radius: 99px;
+        font-size: 0.73rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    .badge-blocked { background: rgba(255,60,80,0.2); color:#ff7088; border:1px solid rgba(255,60,80,0.3); }
+    .badge-masked  { background: rgba(240,180,41,0.2); color:#f0c050; border:1px solid rgba(240,180,41,0.3); }
+    .badge-allowed { background: rgba(34,214,165,0.2); color:#22d6a5; border:1px solid rgba(34,214,165,0.3); }
+
+    /* ── 버튼 ── */
+    .stButton > button {
+        background: linear-gradient(90deg, #0066ff 0%, #00b4ff 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 0.55rem 1.5rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.3px;
+        transition: opacity 0.2s;
+    }
+    .stButton > button:hover { opacity: 0.85; }
+
+    /* ── 입력 필드 ── */
+    .stTextInput input, .stTextInput input:focus {
+        background: rgba(255,255,255,0.06) !important;
+        border: 1px solid rgba(0,180,255,0.25) !important;
+        border-radius: 10px !important;
+        color: #d8eaff !important;
+    }
+    label { color: #7a9cc0 !important; font-size: 0.84rem !important; }
+
+    /* ── 데이터 프레임 ── */
+    [data-testid="stDataFrame"] {
+        border: 1px solid rgba(0,180,255,0.12);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  [제약사항 1] 세션 상태 초기화 — 필수 Key 5개
+# ══════════════════════════════════════════════════════════════════════════
+def init_session_state() -> None:
+    """
+    Streamlit 리렌더링 시 데이터 유실 방지.
+    최상단에서 호출하여 필수 Key가 항상 존재하도록 보장.
+    """
+    _defaults: dict = {
+        "logged_in":    False,   # 로그인 여부 (bool)
+        "role":         "",      # 권한: 'user' | 'admin'
+        "employee_num": "",      # 사번
+        "name":         "",      # 임직원 이름
+        "messages":     [],      # 채팅 히스토리 [{"role": ..., "content": ...}]
+        "token":        "",      # JWT Bearer 토큰
+        "current_page": "chat",  # Admin 전용 페이지 라우팅
+    }
+    for key, value in _defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  API 통신 함수 (타입 힌트 강제)
+# ══════════════════════════════════════════════════════════════════════════
+
+def api_login(employee_num: str, password: str) -> Optional[dict]:
+    """
+    POST /login 호출.
+
+    Returns:
+        dict: {"access_token", "token_type", "role", "name"} | None (실패)
+    """
+    try:
+        resp = requests.post(
+            f"{API_BASE}/login",
+            json={"employee_num": employee_num, "password": password},
+            timeout=5,
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        return None
+    except requests.exceptions.ConnectionError:
+        return None
+    except requests.exceptions.Timeout:
+        return None
+
+
+def api_chat(prompt: str, token: str) -> dict:
+    """
+    POST /chat 호출. 403 Forbidden(보안 차단) 포함 예외 처리.
+
+    Returns:
+        dict:
+            성공: {"ok": True,  "response": str}
+            차단: {"ok": False, "blocked": True,  "detail": str}
+            오류: {"ok": False, "blocked": False, "detail": str}
+    """
+    try:
+        resp = requests.post(
+            f"{API_BASE}/chat",
+            json={"prompt": prompt},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            return {"ok": True, "response": resp.json()["response"]}
+        elif resp.status_code == 403:
+            detail = resp.json().get("detail", "보안 정책 위반")
+            return {"ok": False, "blocked": True, "detail": detail}
+        elif resp.status_code == 401:
+            return {"ok": False, "blocked": False, "detail": "인증이 만료되었습니다. 다시 로그인해주세요."}
+        else:
+            return {"ok": False, "blocked": False, "detail": f"서버 오류 (HTTP {resp.status_code})"}
+    except requests.exceptions.ConnectionError:
+        return {"ok": False, "blocked": False, "detail": "백엔드 서버에 연결할 수 없습니다. (http://localhost:8000)"}
+    except requests.exceptions.Timeout:
+        return {"ok": False, "blocked": False, "detail": "응답 시간이 초과되었습니다."}
+
+
+def api_admin_logs(token: str) -> list[dict]:
+    """
+    GET /admin/logs 호출 (관리자 전용).
+
+    Returns:
+        list[dict]: 보안 로그 항목 리스트 | [] (실패)
+    """
+    try:
+        resp = requests.get(
+            f"{API_BASE}/admin/logs",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=5,
+        )
+        if resp.status_code == 200:
+            return resp.json().get("logs", [])
+        return []
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        return []
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  기능 1: 로그인 뷰
+# ══════════════════════════════════════════════════════════════════════════
+def render_login_view() -> None:
+    """사번·비밀번호 로그인 폼 렌더링. 성공 시 세션에 토큰·권한 저장."""
+
+    # 화면 중앙 배치
+    col_l, col_c, col_r = st.columns([1, 1.4, 1])
+    with col_c:
+        st.markdown("""
+        <div class="login-card">
+            <div class="brand-logo">🛡️ AutoCore</div>
+            <div class="brand-sub">AI Security Gateway</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        with st.form("login_form", clear_on_submit=False):
+            st.markdown(
+                "<p style='color:#7a9cc0;font-size:0.85rem;margin-bottom:1rem;'>"
+                "오토코어 임직원 인증 시스템입니다.<br>사번과 비밀번호를 입력하세요.</p>",
+                unsafe_allow_html=True,
+            )
+            employee_num = st.text_input(
+                "사번 (Employee Number)",
+                placeholder="예) EMP-001 또는 ADMIN-001",
+                key="login_emp",
+            )
+            password = st.text_input(
+                "비밀번호",
+                type="password",
+                placeholder="비밀번호 입력",
+                key="login_pw",
+            )
+
+            submitted = st.form_submit_button("🔐 로그인", use_container_width=True)
+
+            if submitted:
+                if not employee_num or not password:
+                    st.error("사번과 비밀번호를 모두 입력해주세요.")
+                else:
+                    with st.spinner("인증 중..."):
+                        result = api_login(employee_num, password)
+
+                    if result:
+                        st.session_state.logged_in    = True
+                        st.session_state.token         = result["access_token"]
+                        st.session_state.role          = result["role"]
+                        st.session_state.employee_num  = employee_num
+                        st.session_state.name          = result["name"]
+                        st.session_state.messages      = []
+                        st.rerun()
+                    else:
+                        st.error("❌ 사번 또는 비밀번호가 올바르지 않습니다.")
+
+        # 테스트 계정 안내
+        with st.expander("🔑 테스트 계정 안내", expanded=False):
+            st.markdown("""
+            | 사번 | 비밀번호 | 권한 |
+            |------|----------|------|
+            | `EMP-001` | `pass1234` | 일반 임직원 |
+            | `EMP-002` | `pass5678` | 일반 임직원 |
+            | `ADMIN-001` | `adminpass` | 보안 관리자 |
+            """)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  기능 2: 사이드바 (내비게이션 라우팅)
+# ══════════════════════════════════════════════════════════════════════════
+def render_sidebar() -> None:
+    """로그인 후 사이드바 렌더링. Admin이면 메뉴 탭 추가."""
+
+    with st.sidebar:
+        # 브랜드 헤더
+        st.markdown("""
+        <div style="padding:1rem 0 0.5rem;">
+            <div style="font-size:1.3rem;font-weight:800;
+                        background:linear-gradient(90deg,#00b4ff,#0066ff);
+                        -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                🛡️ AutoCore Gateway
+            </div>
+            <div style="font-size:0.72rem;color:#334a66;letter-spacing:1.5px;
+                        text-transform:uppercase;margin-top:0.1rem;">
+                AI Security Platform
+            </div>
+        </div>
+        <hr style="border-color:rgba(0,180,255,0.1);margin:0.8rem 0;">
+        """, unsafe_allow_html=True)
+
+        # 사용자 정보 카드
+        role_badge_color = "#00b4ff" if st.session_state.role == "admin" else "#22d6a5"
+        role_label       = "보안 관리자" if st.session_state.role == "admin" else "임직원"
+        st.markdown(f"""
+        <div style="background:rgba(0,100,220,0.08);border:1px solid rgba(0,180,255,0.12);
+                    border-radius:10px;padding:0.8rem 1rem;margin-bottom:1rem;">
+            <div style="font-size:0.95rem;font-weight:700;color:#d0e8ff;">
+                👤 {st.session_state.name}
+            </div>
+            <div style="font-size:0.75rem;color:#507aa0;margin-top:0.2rem;">
+                {st.session_state.employee_num}
+            </div>
+            <div style="margin-top:0.5rem;">
+                <span style="background:rgba(0,180,255,0.1);border:1px solid {role_badge_color}33;
+                             color:{role_badge_color};border-radius:99px;
+                             padding:0.15rem 0.7rem;font-size:0.72rem;font-weight:700;">
+                    {role_label}
+                </span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Admin 전용 메뉴
+        if st.session_state.role == "admin":
+            st.markdown(
+                "<div style='font-size:0.75rem;color:#506070;letter-spacing:1px;"
+                "text-transform:uppercase;margin-bottom:0.5rem;'>메뉴</div>",
+                unsafe_allow_html=True,
+            )
+            page = st.radio(
+                "페이지 선택",
+                options=["chat", "dashboard"],
+                format_func=lambda x: "💬 AI 챗봇" if x == "chat" else "🛡️ 보안 대시보드",
+                key="page_radio",
+                label_visibility="collapsed",
+            )
+            st.session_state.current_page = page
+            st.markdown(
+                "<hr style='border-color:rgba(0,180,255,0.1);margin:1rem 0;'>",
+                unsafe_allow_html=True,
+            )
+
+        # 로그아웃 버튼
+        if st.button("🚪 로그아웃", use_container_width=True, key="logout_btn"):
+            for key in ["logged_in", "role", "employee_num", "name",
+                        "messages", "token", "current_page"]:
+                st.session_state[key] = (
+                    False if key == "logged_in"
+                    else [] if key == "messages"
+                    else "chat" if key == "current_page"
+                    else ""
+                )
+            st.rerun()
+
+        # 백엔드 연결 상태 표시
+        st.markdown(
+            "<hr style='border-color:rgba(0,180,255,0.08);margin:1rem 0 0.5rem;'>",
+            unsafe_allow_html=True,
+        )
+        try:
+            r = requests.get(f"{API_BASE}/health", timeout=2)
+            if r.status_code == 200:
+                st.markdown(
+                    "<div style='font-size:0.75rem;color:#22d6a5;'>"
+                    "● 백엔드 연결됨</div>",
+                    unsafe_allow_html=True,
+                )
+        except Exception:
+            st.markdown(
+                "<div style='font-size:0.75rem;color:#ff5c7a;'>"
+                "● 백엔드 연결 안 됨</div>",
+                unsafe_allow_html=True,
+            )
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  기능 3: AI 챗봇 뷰
+# ══════════════════════════════════════════════════════════════════════════
+def render_chat_view() -> None:
+    """
+    [제약사항 2] st.chat_message() + st.chat_input() 만 사용.
+    403 차단 응답은 붉은색 경고 배너로 렌더링.
+    """
+    # 헤더
+    st.markdown("""
+    <div class="section-title">💬 AI 어시스턴트</div>
+    <p style="color:#506880;font-size:0.85rem;margin-bottom:1.2rem;">
+        오토코어 AI 보안 게이트웨이를 통해 안전하게 질문하세요.<br>
+        기밀 데이터는 자동으로 보호됩니다.
+    </p>
+    """, unsafe_allow_html=True)
+
+    # 이전 대화 렌더링 (말풍선 스타일)
+    for msg in st.session_state.messages:
+        if msg["role"] == "user":
+            with st.chat_message("user", avatar="👤"):
+                st.markdown(
+                    f'<div class="bubble-row-user">'
+                    f'<div class="chat-bubble-user">{msg["content"]}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+        elif msg["role"] == "system_block":
+            with st.chat_message("assistant", avatar="🚨"):
+                st.markdown(
+                    f'<div class="block-banner">🚨 보안 정책에 의해 차단되었습니다: {msg["content"]}</div>',
+                    unsafe_allow_html=True,
+                )
+        else:
+            with st.chat_message("assistant", avatar="🤖"):
+                st.markdown(
+                    f'<div class="bubble-row-assistant">'
+                    f'<div class="chat-bubble-assistant">{msg["content"]}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
+    # 채팅 입력 (st.chat_input 제약사항 준수)
+    if prompt := st.chat_input("질문을 입력하세요... (예: DWG-2026-X1 도면의 공차 기준은?)"):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user", avatar="👤"):
+            st.markdown(
+                f'<div class="bubble-row-user">'
+                f'<div class="chat-bubble-user">{prompt}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        with st.chat_message("assistant", avatar="🤖"):
+            with st.spinner("AI 보안 게이트웨이 처리 중..."):
+                result = api_chat(prompt, st.session_state.token)
+            if result["ok"]:
+                response_text = result["response"]
+                st.markdown(
+                    f'<div class="bubble-row-assistant">'
+                    f'<div class="chat-bubble-assistant">{response_text}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+                st.session_state.messages.append({"role": "assistant", "content": response_text})
+            elif result.get("blocked"):
+                detail = result["detail"]
+                st.markdown(
+                    f'<div class="block-banner">🚨 보안 정책에 의해 차단되었습니다: {detail}</div>',
+                    unsafe_allow_html=True,
+                )
+                st.session_state.messages.append({"role": "system_block", "content": detail})
+            else:
+                st.error(f"⚠️ {result['detail']}")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  기능 4: 보안 대시보드 뷰 (Admin 전용)
+# ══════════════════════════════════════════════════════════════════════════
+def render_dashboard_view() -> None:
+    """
+    관리자 전용. GET /admin/logs 데이터를:
+    1. st.dataframe()으로 전체 표 출력
+    2. st.bar_chart()로 차단 사유별 통계 시각화
+    """
+    st.markdown("""
+    <div class="section-title">🛡️ 보안 이벤트 대시보드</div>
+    <p style="color:#506880;font-size:0.85rem;margin-bottom:1.5rem;">
+        AI 보안 게이트웨이에서 탐지된 실시간 보안 이벤트 현황입니다.
+    </p>
+    """, unsafe_allow_html=True)
+
+    with st.spinner("보안 로그 불러오는 중..."):
+        logs = api_admin_logs(st.session_state.token)
+
+    if not logs:
+        st.info("표시할 보안 로그가 없습니다. 채팅을 먼저 사용해 보세요.")
+        return
+
+    df = pd.DataFrame(logs)
+
+    # ── 발생 시각 기준 최신순(내림차순) 정렬 ────────────────────────────────
+    df = df.sort_values("timestamp", ascending=False).reset_index(drop=True)
+
+    # ── 요약 메트릭 카드 ────────────────────────────────────────────────
+    total   = len(df)
+    blocked = int((df["status"] == "BLOCKED").sum())
+    masked  = int((df["status"] == "MASKED").sum())
+    allowed = int((df["status"] == "ALLOWED").sum())
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value metric-total">{total}</div>
+            <div class="metric-label">전체 이벤트</div>
+        </div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value metric-blocked">{blocked}</div>
+            <div class="metric-label">🚫 차단</div>
+        </div>""", unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value metric-masked">{masked}</div>
+            <div class="metric-label">🔒 마스킹</div>
+        </div>""", unsafe_allow_html=True)
+    with c4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value metric-allowed">{allowed}</div>
+            <div class="metric-label">✅ 허용</div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── multiselect 필터 ───────────────────────────────────────────────────────
+    with st.expander("🔍 필터 옵션", expanded=True):
+        fcol1, fcol2 = st.columns(2)
+        with fcol1:
+            selected_actions = st.multiselect(
+                "행위 유형 (action)",
+                options=sorted(df["action"].dropna().unique().tolist()),
+                default=[],
+                placeholder="전체 표시",
+                key="filter_action",
+            )
+        with fcol2:
+            selected_threats = st.multiselect(
+                "탐지 위협 (detected_threat)",
+                options=sorted(df["detected_threat"].dropna().unique().tolist()),
+                default=[],
+                placeholder="전체 표시",
+                key="filter_threat",
+            )
+
+    # 필터 적용
+    filtered_df = df.copy()
+    if selected_actions:
+        filtered_df = filtered_df[filtered_df["action"].isin(selected_actions)]
+    if selected_threats:
+        filtered_df = filtered_df[filtered_df["detected_threat"].isin(selected_threats)]
+    f_total = len(filtered_df)
+
+    if selected_actions or selected_threats:
+        st.markdown(
+            f"<p style='color:#7090b0;font-size:0.82rem;margin-bottom:0;>⋏"
+            f" 필터 적용: {total}건 → <b>{f_total}건</b> 표시</p>",
+            unsafe_allow_html=True,
+        )
+
+    # ── 탭: 이벤트 로그 / 통계 차트 ────────────────────────────────────────────────
+    tab_log, tab_chart = st.tabs(["📋 이벤트 로그", "📊 탐지 통계"])
+
+    with tab_log:
+        st.markdown(
+            "<p style='color:#506880;font-size:0.82rem;margin-bottom:0.8rem;'>"
+            f"필터된 {f_total if (selected_actions or selected_threats) else total}건 (모두 최신순 정렬)</p>",
+            unsafe_allow_html=True,
+        )
+        display_source = filtered_df if (selected_actions or selected_threats) else df
+        display_df = display_source.rename(columns={
+            "log_id":          "로그 ID",
+            "employee_num":    "사번",
+            "timestamp":       "발생 시각",
+            "action":          "행위 유형",
+            "detected_threat": "탐지 위협",
+            "status":          "처리 결과",
+        })
+        st.dataframe(
+            display_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "처리 결과": st.column_config.Column(width="small"),
+                "발생 시각": st.column_config.Column(width="medium"),
+                "탐지 위협": st.column_config.Column(width="large"),
+            },
+        )
+
+    with tab_chart:
+        col_a, col_b = st.columns(2)
+
+        with col_a:
+            st.markdown(
+                "<p style='color:#7090b0;font-size:0.85rem;font-weight:600;"
+                "margin-bottom:0.5rem;'>처리 결과별 건수</p>",
+                unsafe_allow_html=True,
+            )
+            status_counts = df["status"].value_counts().reset_index()
+            status_counts.columns = ["처리 결과", "건수"]
+            st.bar_chart(
+                status_counts.set_index("처리 결과"),
+                color="#00b4ff",
+                use_container_width=True,
+            )
+
+        with col_b:
+            st.markdown(
+                "<p style='color:#7090b0;font-size:0.85rem;font-weight:600;"
+                "margin-bottom:0.5rem;'>사번별 행위 건수</p>",
+                unsafe_allow_html=True,
+            )
+            emp_counts = df["employee_num"].value_counts().reset_index()
+            emp_counts.columns = ["사번", "건수"]
+            st.bar_chart(
+                emp_counts.set_index("사번"),
+                color="#0066ff",
+                use_container_width=True,
+            )
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  메인 진입점 — 라우팅 제어
+# ══════════════════════════════════════════════════════════════════════════
+def main() -> None:
+    init_session_state()   # [제약사항 1] 세션 최상단 초기화
+    inject_css()           # 프리미엄 다크 테마 주입
+
+    if not st.session_state.logged_in:
+        # ── 비로그인: 로그인 화면 ────────────────────────────────────────
+        # 상단 중앙 브랜드 타이틀
+        st.markdown("""
+        <div style="text-align:center;padding:2.5rem 0 1rem;">
+            <div style="font-size:2.5rem;font-weight:900;
+                        background:linear-gradient(90deg,#00b4ff 0%,#0066ff 100%);
+                        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                        letter-spacing:-1px;">
+                AutoCore AI Security Gateway
+            </div>
+            <div style="color:#3a5878;font-size:0.88rem;letter-spacing:2px;
+                        text-transform:uppercase;margin-top:0.4rem;">
+                지능형 차세대 AI DLP 플랫폼
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        render_login_view()
+
+    else:
+        # ── 로그인 완료: 사이드바 + 메인 화면 ──────────────────────────
+        render_sidebar()
+
+        if st.session_state.role == "admin":
+            # Admin: current_page에 따라 챗봇 / 대시보드 전환
+            if st.session_state.current_page == "dashboard":
+                render_dashboard_view()
+            else:
+                render_chat_view()
+        else:
+            # 일반 User: 챗봇만 노출
+            render_chat_view()
+
+
+if __name__ == "__main__":
+    main()

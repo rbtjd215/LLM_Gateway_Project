@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # ─────────────────────────────────────────────
+  #  PostgreSQL - 메인 데이터베이스
+  # ─────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: autocore_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: autocore_db
+      POSTGRES_USER: autocore_user
+      POSTGRES_PASSWORD: autocore_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - autocore_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autocore_user -d autocore_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ─────────────────────────────────────────────
+  #  Redis - 마스킹 토큰 인메모리 매핑 저장소
+  # ─────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: autocore_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - autocore_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ─────────────────────────────────────────────
+  #  FastAPI - AI 보안 게이트웨이 API 서버
+  # ─────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autocore_api
+    restart: unless-stopped
+    # [제약사항 3] --reload 플래그로 핫 리로딩 활성화
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # [제약사항 3] 호스트 ./app 폴더 → 컨테이너 /app/app 마운트 (코드 수정 즉시 반영)
+    volumes:
+      - ./app:/app/app
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://autocore_user:autocore_pass@db:5432/autocore_db
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: autocore-super-secret-key-change-in-production-2026
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - autocore_net
+
+networks:
+  autocore_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
