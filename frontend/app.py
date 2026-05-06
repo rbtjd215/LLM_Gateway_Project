@@ -580,7 +580,24 @@ def render_dashboard_view() -> None:
     </p>
     """, unsafe_allow_html=True)
 
-    st.markdown(f'<a href="{API_URL}/admin/export-csv" target="_blank"><button style="background-color:#4CAF50; border:none; color:white; padding:10px 24px; text-align:center; text-decoration:none; display:inline-block; font-size:16px; margin:4px 2px; cursor:pointer; border-radius:8px;">📥 테스트 데이터 전체 다운로드 (CSV)</button></a>', unsafe_allow_html=True)
+    # --- 교체할 안전한 다운로드 버튼 로직 ---
+    try:
+        # 1. 프론트엔드 서버가 내부망을 통해 백엔드에서 데이터를 먼저 가져옴
+        export_res = requests.get(f"{API_URL}/admin/export-csv", timeout=10)
+        
+        # 2. 성공적으로 가져왔다면 브라우저에 다운로드 버튼 표시
+        if export_res.status_code == 200:
+            st.download_button(
+                label="📥 테스트 데이터 전체 다운로드 (CSV)",
+                data=export_res.content,
+                file_name="autocore_logs.csv",
+                mime="text/csv",
+                type="primary"
+            )
+        else:
+            st.warning("CSV 데이터를 불러올 수 없습니다.")
+    except Exception as e:
+        st.error(f"다운로드 서버 연결 오류: {e}")
 
     with st.spinner("보안 로그 불러오는 중..."):
         logs = api_admin_logs(st.session_state.token)
@@ -593,6 +610,12 @@ def render_dashboard_view() -> None:
 
     # ── 발생 시각 기준 최신순(내림차순) 정렬 ────────────────────────────────
     df = df.sort_values("timestamp", ascending=False).reset_index(drop=True)
+
+    # 원본 데이터를 보존하면서 깔끔한 필터용 컬럼(threat_category) 생성
+    if not df.empty and 'detected_threat' in df.columns:
+        df['threat_category'] = df['detected_threat'].apply(
+            lambda x: str(x).split(' (')[0].strip() if pd.notnull(x) and str(x).strip() != "" else x
+        )
 
     # ── 요약 메트릭 카드 ────────────────────────────────────────────────
     total   = len(df)
@@ -641,8 +664,8 @@ def render_dashboard_view() -> None:
             )
         with fcol2:
             selected_threats = st.multiselect(
-                "탐지 위협 (detected_threat)",
-                options=sorted(df["detected_threat"].dropna().unique().tolist()),
+                "탐지 위협 (카테고리)",
+                options=sorted(df["threat_category"].dropna().unique().tolist()),
                 default=[],
                 placeholder="전체 표시",
                 key="filter_threat",
@@ -653,7 +676,7 @@ def render_dashboard_view() -> None:
     if selected_actions:
         filtered_logs = [l for l in filtered_logs if l.get("action") in selected_actions]
     if selected_threats:
-        filtered_logs = [l for l in filtered_logs if l.get("detected_threat") in selected_threats]
+        filtered_logs = [l for l in filtered_logs if str(l.get("detected_threat", "")).split(' (')[0].strip() in selected_threats]
     
     # 최신순 정렬
     filtered_logs = sorted(filtered_logs, key=lambda x: x.get("timestamp", ""), reverse=True)
@@ -712,17 +735,24 @@ def render_dashboard_view() -> None:
             label = f"{icon} #{log_id}  |  {emp}  |  {status_val}  |  {ts}"
 
             with st.expander(label, expanded=False):
-                safe_orig = str(log.get("original_prompt", "") or "")
-                safe_masked = str(log.get("masked_prompt", "") or "")
+                safe_orig = html.escape(str(log.get("original_prompt", "") or ""))
+                safe_masked = html.escape(str(log.get("masked_prompt", "") or ""))
                 
                 if safe_orig:
                     col_orig, col_mask = st.columns(2)
                     with col_orig:
                         st.text("▼ 원본 프롬프트")
-                        st.code(safe_orig, language=None)
+                        st.markdown(
+                            f"<div style='white-space: pre-wrap; word-break: break-word; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; font-family: monospace; line-height: 1.5;'>{safe_orig}</div>",
+                            unsafe_allow_html=True
+                        )
                     with col_mask:
                         st.text("▼ 전송 프롬프트 (마스킹)")
-                        st.code(safe_masked if safe_masked else "(동일 — 기밀 미탐지)", language=None)
+                        safe_masked_display = safe_masked if safe_masked else "(동일 — 기밀 미탐지)"
+                        st.markdown(
+                            f"<div style='white-space: pre-wrap; word-break: break-word; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; font-family: monospace; line-height: 1.5;'>{safe_masked_display}</div>",
+                            unsafe_allow_html=True
+                        )
                 
                 mapping_raw = log.get("mapping_info", "")
                 if isinstance(mapping_raw, dict):
