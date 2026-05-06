@@ -57,6 +57,9 @@ class LogEntry(BaseModel):
     action: str
     detected_threat: str
     status: str         # "BLOCKED" | "MASKED" | "ALLOWED"
+    original_prompt: Optional[str] = ""
+    masked_prompt: Optional[str] = ""
+    mapping_info: Optional[str] = ""  # JSON 문자열로 직렬화된 매핑 딕셔너리
 
 
 class LogListResponse(BaseModel):

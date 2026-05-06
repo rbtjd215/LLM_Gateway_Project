@@ -102,28 +102,19 @@ def check_intent(prompt: str) -> tuple[bool, str]:
 # ══════════════════════════════════════════════════════════════════════════════
 
 # (토큰 접두사, 정규식 패턴)
-# 패턴 적용 우선순위: 리스트 순서대로 순차 검사
+# ※ 토큰명 규칙: [MASKED_{TYPE}_{6자리hex}]  (예: [MASKED_EMP_a1b2c3])
 _SECRET_PATTERNS: list[tuple[str, str]] = [
-    # 설계 도면 번호: DWG-2026-X1, DWG-2025-AB12C 등
-    # 규칙: DWG- + 4자리 연도 + - + 영대문자/숫자 조합(1자 이상)
-    (
-        "BLUEPRINT",
-        r"DWG-\d{4}-[A-Z0-9]+",
-    ),
+    # 사원번호: EMP-001, EMP-042, EMP-999 등
+    ("MASKED_EMP",   r"EMP-\d{3}"),
 
-    # 정밀 치수 / 공차값: 공차 ±0.005mm, 공차 ±1.23mm 등
-    # 규칙: '공차' + 공백* + ± + 공백* + 정수.소수 + 공백* + mm
-    (
-        "DIMENSION",
-        r"공차\s*±\s*\d+\.\d+\s*mm",
-    ),
+    # 설계 도면 번호: DWG-2026-X1, DWG-2025-AB12C 등
+    ("MASKED_DWG",   r"DWG-\d{4}-[A-Z0-9]+"),
+
+    # 정밀 치수 / 공차값: 공차 ±0.005mm 등
+    ("MASKED_DIM",   r"공차\s*±\s*\d+\.\d+\s*mm"),
 
     # 임직원 휴대전화: 010-1234-5678
-    # 규칙: 010 + - + 4자리 + - + 4자리
-    (
-        "PHONE",
-        r"010-\d{4}-\d{4}",
-    ),
+    ("MASKED_PHONE", r"010-\d{4}-\d{4}"),
 ]
 
 
@@ -134,45 +125,49 @@ def _generate_token(prefix: str) -> str:
     암호학적으로 안전한 난수 토큰 생성.
 
     Args:
-        prefix: 토큰 유형 접두사 (예: "BLUEPRINT", "PHONE")
+        prefix: 토큰 유형 접두사 (예: "MASKED_EMP", "MASKED_DWG")
 
     Returns:
-        str: "[PREFIX_6자리16진수]" 형태 토큰 (예: [BLUEPRINT_a1b2c3])
+        str: "[MASKED_EMP_6자리16진수]" 형태 토큰 (예: [MASKED_EMP_a1b2c3])
 
     Note:
         secrets.token_hex(3) → 6자리 16진수 → 16^6 ≈ 1,677만 가지 조합
-        동일 텍스트라도 매번 다른 토큰이 생성됨 (동적성 보장)
     """
     rand_hex = secrets.token_hex(3)   # 예: "a1b2c3"
     return f"[{prefix}_{rand_hex}]"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  기능 3: 실시간 마스킹 (mask_data)
+#  기능 3: 실시간 마스킹 (mask_sensitive_data) — 정식 함수
+#  ※ 구 mask_data()는 폐기됨. 이 함수가 유일한 마스킹 인터페이스.
 # ══════════════════════════════════════════════════════════════════════════════
 
-def mask_data(text: str) -> tuple[MaskedText, MappingDict]:
+def mask_sensitive_data(text: str) -> tuple[MaskedText, MappingDict]:
     """
-    입력 텍스트에서 오토코어 기밀 데이터를 동적 토큰으로 치환(마스킹).
+    사용자 프롬프트에서 기밀 데이터를 비식별화(마스킹)하는 정식 함수.
+
+    re 모듈 기반으로 아래 패턴을 탐지하여 [MASKED_{TYPE}_고유번호] 토큰으로 치환:
+      - 사원번호 : EMP-\\d{3}            → [MASKED_EMP_고유번호]
+      - 도면번호 : DWG-\\d{4}-[A-Z0-9]+  → [MASKED_DWG_고유번호]
+      - 공차값   : 공차 ±n.nnn mm        → [MASKED_DIM_고유번호]
+      - 휴대전화 : 010-\\d{4}-\\d{4}      → [MASKED_PHONE_고유번호]
 
     Args:
-        text: 사용자 원본 프롬프트
+        text: 사용자가 입력한 원본 프롬프트 문자열
 
     Returns:
         tuple[MaskedText, MappingDict]:
-            - MaskedText  : 기밀이 [TOKEN_난수] 형태로 치환된 안전한 텍스트
-                            → 이 텍스트만 외부 LLM API로 전송됨
-            - MappingDict : {"[BLUEPRINT_a1b2c3]": "DWG-2026-X1", ...}
-                            → Redis 인메모리에 임시 보관, unmask_data()에서 참조
+            - MaskedText  : 기밀이 [MASKED_*_난수] 형태로 치환된 안전한 텍스트
+            - MappingDict : {"[MASKED_EMP_a1b2c3]": "EMP-001", ...}
+                            → Redis에 TTL 300초로 임시 보관, unmask_data()에서 참조
 
-    Note:
-        동일 원본값이 텍스트 내 여러 번 등장하면 같은 토큰으로 일관성 있게 치환.
-        re.sub + 클로저 패턴으로 O(n) 단일 패스 처리.
+    Example:
+        >>> masked, m = mask_sensitive_data("EMP-001이 DWG-2026-X1 도면 요청")
+        >>> # masked → "[MASKED_EMP_f3c1a2]이 [MASKED_DWG_d4e5f6] 도면 요청"
+        >>> # m → {"[MASKED_EMP_f3c1a2]": "EMP-001", "[MASKED_DWG_d4e5f6]": "DWG-2026-X1"}
     """
-    masked_text: str    = text
+    masked_text: str = text
     mapping_dict: MappingDict = {}
-
-    # 역방향 조회용: original → token (동일 원본 중복 방지)
     _original_to_token: dict[str, str] = {}
 
     for prefix, pattern in _SECRET_PATTERNS:
@@ -199,15 +194,13 @@ def unmask_data(masked_text: str, mapping_dict: MappingDict) -> str:
 
     Args:
         masked_text  : 외부 LLM이 생성한 응답 텍스트 (토큰 포함)
-        mapping_dict : mask_data()가 반환한 역치환 매핑 딕셔너리
+        mapping_dict : mask_sensitive_data()가 반환한 역치환 매핑 딕셔너리
 
     Returns:
         str: 모든 토큰이 원본 데이터로 완전히 복원된 최종 텍스트
-             → 이 텍스트를 사용자(팀원 A UI)에게 최종 출력
 
     Note:
         매핑 딕셔너리가 비어 있으면 입력 텍스트를 그대로 반환 (안전 동작).
-        AI가 토큰을 변형하거나 누락시킨 경우 해당 토큰은 복원되지 않음.
     """
     result: str = masked_text
     for token, original in mapping_dict.items():

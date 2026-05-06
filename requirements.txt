@@ -13,6 +13,7 @@ redis==5.0.4
 python-jose[cryptography]==3.3.0
 
 # 비밀번호 해싱 (현재 단순 비교, 추후 bcrypt 활성화)
+bcrypt==3.2.2
 passlib[bcrypt]==1.7.4
 
 # 환경 변수
@@ -23,3 +24,6 @@ python-multipart==0.0.9
 
 # 데이터 검증
 pydantic==2.7.1
+
+# Google Gemini AI
+google-genai

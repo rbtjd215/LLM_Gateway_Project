@@ -9,10 +9,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from passlib.context import CryptContext
 
 from app.database import engine, SessionLocal
 from app import models
 from app.routers import router
+
+# 비밀번호 해시 컨텍스트
+_pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 # ── DB 테이블 생성 및 초기 시드 데이터 ────────────────────
@@ -20,27 +24,26 @@ from app.routers import router
 def _seed_initial_data():
     """
     서버 최초 기동 시 테스트용 유저 및 부품 데이터 삽입.
-    이미 데이터가 존재하면 스킵 (멱등성 보장).
+    EMP-001 계정이 이미 존재하면 스킵 (멱등성 보장).
+    비밀번호는 bcrypt로 해시하여 저장.
     """
     db = SessionLocal()
     try:
-        # 이미 유저가 있으면 스킵
-        if db.query(models.User).count() > 0:
+        # EMP-001 계정이 존재하면 스킵
+        if db.query(models.User).filter(models.User.employee_num == "EMP-001").first():
             print("[AutoCore] 초기 데이터 이미 존재 → 시드 스킵")
             return
 
-        # ── 테스트 유저 ───────────────────────────────────
-        # ※ 현재 password_hash는 평문 (초기 테스트용)
-        #   추후 passlib.bcrypt.hash()로 교체 예정
+        # ── 테스트 유저 (bcrypt 해시 적용) ──────────────────────────────────
         test_users = [
-            models.User(employee_num="EMP-001",   password_hash="pass1234",  role="user",  name="김철수"),
-            models.User(employee_num="EMP-002",   password_hash="pass5678",  role="user",  name="이영희"),
-            models.User(employee_num="EMP-042",   password_hash="pass0000",  role="user",  name="박설계"),
-            models.User(employee_num="ADMIN-001", password_hash="adminpass", role="admin", name="최보안"),
+            models.User(employee_num="EMP-001",   password_hash=_pwd_ctx.hash("pass1234"),  role="user",  name="김철수"),
+            models.User(employee_num="EMP-002",   password_hash=_pwd_ctx.hash("pass5678"),  role="user",  name="이영희"),
+            models.User(employee_num="EMP-042",   password_hash=_pwd_ctx.hash("pass0000"),  role="user",  name="박설계"),
+            models.User(employee_num="ADMIN-001", password_hash=_pwd_ctx.hash("adminpass"), role="admin", name="최보안"),
         ]
         db.add_all(test_users)
 
-        # ── 자동차 부품 기밀 데이터 ────────────────────────
+        # ── 자동차 부품 기밀 데이터 ────────────────────────────────────────────
         test_parts = [
             models.AutoPart(
                 blueprint_num="DWG-2026-X1",
@@ -62,7 +65,7 @@ def _seed_initial_data():
 
         db.commit()
         print("[AutoCore] 초기 테스트 데이터 삽입 완료 ✓")
-        print("[AutoCore]   유저: EMP-001/pass1234, EMP-002/pass5678, ADMIN-001/adminpass")
+        print("[AutoCore]   계정: EMP-001/pass1234, EMP-002/pass5678, ADMIN-001/adminpass (bcrypt 해싱 적용)")
 
     except Exception as e:
         db.rollback()
@@ -77,6 +80,22 @@ async def lifespan(app: FastAPI):
     print("[AutoCore] AI Security Gateway 기동 중...")
     # ORM 모델 기반으로 테이블 자동 생성
     models.Base.metadata.create_all(bind=engine)
+
+    # ── 경량 마이그레이션: security_logs에 신규 컬럼 추가 ──────────────────
+    from sqlalchemy import text, inspect
+    inspector = inspect(engine)
+    existing_cols = {c["name"] for c in inspector.get_columns("security_logs")}
+    _new_columns = {
+        "original_prompt": "TEXT",
+        "masked_prompt":   "TEXT",
+        "mapping_dict":    "TEXT",
+    }
+    with engine.begin() as conn:
+        for col_name, col_type in _new_columns.items():
+            if col_name not in existing_cols:
+                conn.execute(text(f'ALTER TABLE security_logs ADD COLUMN {col_name} {col_type}'))
+                print(f"[AutoCore] 마이그레이션: security_logs.{col_name} 컬럼 추가 ✓")
+
     # 초기 시드 데이터 삽입
     _seed_initial_data()
     print("[AutoCore] 게이트웨이 준비 완료 ✓  → http://localhost:8000/docs")

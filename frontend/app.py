@@ -13,13 +13,15 @@ frontend/app.py
 ────────────────────────────────────────────────────────────────────────────
 """
 
+import os
+import html
 import streamlit as st
 import requests
 import pandas as pd
 from typing import Optional
 
 # ── 상수 ─────────────────────────────────────────────────────────────────
-API_BASE = "http://localhost:8000"
+API_URL = os.getenv("API_URL", "http://api:8000")
 
 # ══════════════════════════════════════════════════════════════════════════
 #  페이지 설정 (반드시 최상단, 다른 st 호출 전에 위치)
@@ -240,22 +242,25 @@ def init_session_state() -> None:
 def api_login(employee_num: str, password: str) -> Optional[dict]:
     """
     POST /login 호출.
-
-    Returns:
-        dict: {"access_token", "token_type", "role", "name"} | None (실패)
     """
+    target_url = f"{API_URL}/login"
     try:
         resp = requests.post(
-            f"{API_BASE}/login",
-            json={"employee_num": employee_num, "password": password},
+            target_url,
+            data={"username": employee_num, "password": password},
             timeout=5,
         )
         if resp.status_code == 200:
             return resp.json()
+        
+        # 디버깅 로그 노출 (핵심 방어)
+        st.error(f"서버 응답 오류 [{resp.status_code}]: {resp.text}")
         return None
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
+        st.error(f"서버 연결 실패! 시도한 주소: {target_url} | 에러 내용: {e}")
         return None
-    except requests.exceptions.Timeout:
+    except requests.exceptions.Timeout as e:
+        st.error(f"서버 응답 초과! 시도한 주소: {target_url} | 에러 내용: {e}")
         return None
 
 
@@ -270,8 +275,9 @@ def api_chat(prompt: str, token: str) -> dict:
             오류: {"ok": False, "blocked": False, "detail": str}
     """
     try:
+        target_url = f"{API_URL}/chat"
         resp = requests.post(
-            f"{API_BASE}/chat",
+            target_url,
             json={"prompt": prompt},
             headers={"Authorization": f"Bearer {token}"},
             timeout=15,
@@ -286,7 +292,7 @@ def api_chat(prompt: str, token: str) -> dict:
         else:
             return {"ok": False, "blocked": False, "detail": f"서버 오류 (HTTP {resp.status_code})"}
     except requests.exceptions.ConnectionError:
-        return {"ok": False, "blocked": False, "detail": "백엔드 서버에 연결할 수 없습니다. (http://localhost:8000)"}
+        return {"ok": False, "blocked": False, "detail": f"백엔드 서버에 연결할 수 없습니다. ({target_url})"}
     except requests.exceptions.Timeout:
         return {"ok": False, "blocked": False, "detail": "응답 시간이 초과되었습니다."}
 
@@ -299,8 +305,9 @@ def api_admin_logs(token: str) -> list[dict]:
         list[dict]: 보안 로그 항목 리스트 | [] (실패)
     """
     try:
+        target_url = f"{API_URL}/admin/logs"
         resp = requests.get(
-            f"{API_BASE}/admin/logs",
+            target_url,
             headers={"Authorization": f"Bearer {token}"},
             timeout=5,
         )
@@ -461,7 +468,7 @@ def render_sidebar() -> None:
             unsafe_allow_html=True,
         )
         try:
-            r = requests.get(f"{API_BASE}/health", timeout=2)
+            r = requests.get(f"{API_URL}/health", timeout=2)
             if r.status_code == 200:
                 st.markdown(
                     "<div style='font-size:0.75rem;color:#22d6a5;'>"
@@ -497,23 +504,26 @@ def render_chat_view() -> None:
     for msg in st.session_state.messages:
         if msg["role"] == "user":
             with st.chat_message("user", avatar="👤"):
+                safe_content = html.escape(msg["content"])
                 st.markdown(
                     f'<div class="bubble-row-user">'
-                    f'<div class="chat-bubble-user">{msg["content"]}</div>'
+                    f'<div class="chat-bubble-user">{safe_content}</div>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
         elif msg["role"] == "system_block":
             with st.chat_message("assistant", avatar="🚨"):
+                safe_content = html.escape(msg["content"])
                 st.markdown(
-                    f'<div class="block-banner">🚨 보안 정책에 의해 차단되었습니다: {msg["content"]}</div>',
+                    f'<div class="block-banner">🚨 보안 정책에 의해 차단되었습니다: {safe_content}</div>',
                     unsafe_allow_html=True,
                 )
         else:
             with st.chat_message("assistant", avatar="🤖"):
+                safe_content = html.escape(msg["content"])
                 st.markdown(
                     f'<div class="bubble-row-assistant">'
-                    f'<div class="chat-bubble-assistant">{msg["content"]}</div>'
+                    f'<div class="chat-bubble-assistant">{safe_content}</div>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
@@ -522,9 +532,10 @@ def render_chat_view() -> None:
     if prompt := st.chat_input("질문을 입력하세요... (예: DWG-2026-X1 도면의 공차 기준은?)"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user", avatar="👤"):
+            safe_prompt = html.escape(prompt)
             st.markdown(
                 f'<div class="bubble-row-user">'
-                f'<div class="chat-bubble-user">{prompt}</div>'
+                f'<div class="chat-bubble-user">{safe_prompt}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -533,17 +544,19 @@ def render_chat_view() -> None:
                 result = api_chat(prompt, st.session_state.token)
             if result["ok"]:
                 response_text = result["response"]
+                safe_response = html.escape(response_text)
                 st.markdown(
                     f'<div class="bubble-row-assistant">'
-                    f'<div class="chat-bubble-assistant">{response_text}</div>'
+                    f'<div class="chat-bubble-assistant">{safe_response}</div>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
             elif result.get("blocked"):
                 detail = result["detail"]
+                safe_detail = html.escape(detail)
                 st.markdown(
-                    f'<div class="block-banner">🚨 보안 정책에 의해 차단되었습니다: {detail}</div>',
+                    f'<div class="block-banner">🚨 보안 정책에 의해 차단되었습니다: {safe_detail}</div>',
                     unsafe_allow_html=True,
                 )
                 st.session_state.messages.append({"role": "system_block", "content": detail})
@@ -566,6 +579,8 @@ def render_dashboard_view() -> None:
         AI 보안 게이트웨이에서 탐지된 실시간 보안 이벤트 현황입니다.
     </p>
     """, unsafe_allow_html=True)
+
+    st.markdown(f'<a href="{API_URL}/admin/export-csv" target="_blank"><button style="background-color:#4CAF50; border:none; color:white; padding:10px 24px; text-align:center; text-decoration:none; display:inline-block; font-size:16px; margin:4px 2px; cursor:pointer; border-radius:8px;">📥 테스트 데이터 전체 다운로드 (CSV)</button></a>', unsafe_allow_html=True)
 
     with st.spinner("보안 로그 불러오는 중..."):
         logs = api_admin_logs(st.session_state.token)
@@ -634,65 +649,116 @@ def render_dashboard_view() -> None:
             )
 
     # 필터 적용
-    filtered_df = df.copy()
+    filtered_logs = logs
     if selected_actions:
-        filtered_df = filtered_df[filtered_df["action"].isin(selected_actions)]
+        filtered_logs = [l for l in filtered_logs if l.get("action") in selected_actions]
     if selected_threats:
-        filtered_df = filtered_df[filtered_df["detected_threat"].isin(selected_threats)]
-    f_total = len(filtered_df)
+        filtered_logs = [l for l in filtered_logs if l.get("detected_threat") in selected_threats]
+    
+    # 최신순 정렬
+    filtered_logs = sorted(filtered_logs, key=lambda x: x.get("timestamp", ""), reverse=True)
+    f_total = len(filtered_logs)
 
     if selected_actions or selected_threats:
         st.markdown(
-            f"<p style='color:#7090b0;font-size:0.82rem;margin-bottom:0;>⋏"
+            f"<p style='color:#7090b0;font-size:0.82rem;margin-bottom:0;'>"
             f" 필터 적용: {total}건 → <b>{f_total}건</b> 표시</p>",
             unsafe_allow_html=True,
         )
 
-    # ── 탭: 이벤트 로그 / 통계 차트 ────────────────────────────────────────────────
-    tab_log, tab_chart = st.tabs(["📋 이벤트 로그", "📊 탐지 통계"])
+    # ══════════════════════════════════════════════════════════════════════
+    #  [핵심] 순수 문자열 리스트 수작업 생성 — DataFrame/PyArrow 직렬화 에러 원천 차단
+    # ══════════════════════════════════════════════════════════════════════
+    clean_data = []
+    for log in filtered_logs:
+        clean_data.append({
+            "로그 ID": str(log.get("log_id", "")),
+            "발생 시각": str(log.get("timestamp", "")),
+            "사번": str(log.get("employee_num", "")),
+            "행위 유형": str(log.get("action", "")),
+            "탐지 위협": str(log.get("detected_threat", "")),
+            "처리 상태": str(log.get("status", ""))
+        })
+
+    # ── 탭: 이벤트 로그 / 상세 처리 결과 / 통계 차트 ──────────────────────────────
+    tab_log, tab_detail, tab_chart = st.tabs(["📋 이벤트 로그", "🔍 상세 처리 결과", "📊 탐지 통계"])
 
     with tab_log:
         st.markdown(
             "<p style='color:#506880;font-size:0.82rem;margin-bottom:0.8rem;'>"
-            f"필터된 {f_total if (selected_actions or selected_threats) else total}건 (모두 최신순 정렬)</p>",
+            f"필터된 {f_total}건 (모두 최신순 정렬)</p>",
             unsafe_allow_html=True,
         )
-        display_source = filtered_df if (selected_actions or selected_threats) else df
-        display_df = display_source.rename(columns={
-            "log_id":          "로그 ID",
-            "employee_num":    "사번",
-            "timestamp":       "발생 시각",
-            "action":          "행위 유형",
-            "detected_threat": "탐지 위협",
-            "status":          "처리 결과",
-        })
         st.dataframe(
-            display_df,
+            pd.DataFrame(clean_data),
             use_container_width=True,
             hide_index=True,
             column_config={
-                "처리 결과": st.column_config.Column(width="small"),
+                "처리 상태": st.column_config.Column(width="small"),
                 "발생 시각": st.column_config.Column(width="medium"),
                 "탐지 위협": st.column_config.Column(width="large"),
             },
         )
 
+    with tab_detail:
+        st.text("각 보안 이벤트의 마스킹 치환 상세 내역입니다. MASKED 이벤트를 펼쳐서 확인하세요.")
+        for log in filtered_logs:
+            log_id = str(log.get("log_id", ""))
+            status_val = str(log.get("status", ""))
+            emp = str(log.get("employee_num", ""))
+            ts = str(log.get("timestamp", ""))
+
+            icon = "🚫" if status_val == "BLOCKED" else "🔒" if status_val == "MASKED" else "✅"
+            label = f"{icon} #{log_id}  |  {emp}  |  {status_val}  |  {ts}"
+
+            with st.expander(label, expanded=False):
+                safe_orig = str(log.get("original_prompt", "") or "")
+                safe_masked = str(log.get("masked_prompt", "") or "")
+                
+                if safe_orig:
+                    col_orig, col_mask = st.columns(2)
+                    with col_orig:
+                        st.text("▼ 원본 프롬프트")
+                        st.code(safe_orig, language=None)
+                    with col_mask:
+                        st.text("▼ 전송 프롬프트 (마스킹)")
+                        st.code(safe_masked if safe_masked else "(동일 — 기밀 미탐지)", language=None)
+                
+                mapping_raw = log.get("mapping_info", "")
+                if isinstance(mapping_raw, dict):
+                    import json
+                    safe_mapping = json.dumps(mapping_raw, ensure_ascii=False, indent=2)
+                elif isinstance(mapping_raw, str) and mapping_raw.strip():
+                    import json
+                    try:
+                        parsed = json.loads(mapping_raw)
+                        safe_mapping = json.dumps(parsed, ensure_ascii=False, indent=2)
+                    except (json.JSONDecodeError, TypeError):
+                        safe_mapping = ""
+                else:
+                    safe_mapping = ""
+                
+                if safe_mapping:
+                    st.text("🔐 마스킹 토큰 매핑 내역")
+                    st.code(safe_mapping, language="json")
+                else:
+                    if status_val != "BLOCKED":
+                        st.text("매핑 정보 없음 (기밀 데이터 미탐지)")
+
     with tab_chart:
         col_a, col_b = st.columns(2)
+        chart_df = pd.DataFrame(clean_data)
 
         with col_a:
             st.markdown(
                 "<p style='color:#7090b0;font-size:0.85rem;font-weight:600;"
-                "margin-bottom:0.5rem;'>처리 결과별 건수</p>",
+                "margin-bottom:0.5rem;'>처리 상태별 건수</p>",
                 unsafe_allow_html=True,
             )
-            status_counts = df["status"].value_counts().reset_index()
-            status_counts.columns = ["처리 결과", "건수"]
-            st.bar_chart(
-                status_counts.set_index("처리 결과"),
-                color="#00b4ff",
-                use_container_width=True,
-            )
+            if not chart_df.empty:
+                status_counts = chart_df["처리 상태"].value_counts().reset_index()
+                status_counts.columns = ["처리 상태", "건수"]
+                st.bar_chart(status_counts.set_index("처리 상태"), color="#00b4ff", use_container_width=True)
 
         with col_b:
             st.markdown(
@@ -700,13 +766,10 @@ def render_dashboard_view() -> None:
                 "margin-bottom:0.5rem;'>사번별 행위 건수</p>",
                 unsafe_allow_html=True,
             )
-            emp_counts = df["employee_num"].value_counts().reset_index()
-            emp_counts.columns = ["사번", "건수"]
-            st.bar_chart(
-                emp_counts.set_index("사번"),
-                color="#0066ff",
-                use_container_width=True,
-            )
+            if not chart_df.empty:
+                emp_counts = chart_df["사번"].value_counts().reset_index()
+                emp_counts.columns = ["사번", "건수"]
+                st.bar_chart(emp_counts.set_index("사번"), color="#0066ff", use_container_width=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════

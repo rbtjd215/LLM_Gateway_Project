@@ -52,4 +52,7 @@ class SecurityLog(Base):
     detected_threat= Column(String(255), nullable=True,              comment="탐지된 위협 유형")
     status         = Column(String(20),  nullable=False,             comment="처리 결과: BLOCKED | MASKED | ALLOWED")
     raw_prompt_hash= Column(String(255), nullable=True,              comment="원본 프롬프트 SHA-256 해시 (감사용)")
+    original_prompt= Column(Text,        nullable=True,              comment="사용자가 입력한 원본 프롬프트")
+    masked_prompt  = Column(Text,        nullable=True,              comment="마스킹 처리된 전송 프롬프트")
+    mapping_dict   = Column(Text,        nullable=True,              comment="마스킹 매핑 JSON (예: {[MASKED_EMP_xx]: EMP-001})")
     created_at     = Column(DateTime(timezone=True), server_default=func.now(), comment="탐지 일시")
