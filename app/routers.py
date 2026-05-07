@@ -335,3 +335,21 @@ def export_csv(db: Session = Depends(get_db)):
         writer.writerow([log.log_id, log.employee_num, log.action, log.detected_threat, log.status, log.created_at, log.original_prompt, log.masked_prompt])
     stream.seek(0)
     return StreamingResponse(iter([stream.getvalue()]), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=autocore_logs.csv"})
+
+
+# ══════════════════════════════════════════════════════════
+#  DELETE /admin/clear-logs  — 보안 로그 전체 초기화 (테스트용)
+# ══════════════════════════════════════════════════════════
+
+@router.delete("/admin/clear-logs")
+def clear_logs(
+    current_user: User = Depends(get_admin_user),  # 관리자 권한 의존성
+    db: Session = Depends(get_db),
+):
+    try:
+        db.query(SecurityLog).delete()
+        db.commit()
+        return {"message": "Logs cleared successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

@@ -15,6 +15,7 @@ frontend/app.py
 
 import os
 import html
+import time
 import streamlit as st
 import requests
 import pandas as pd
@@ -598,6 +599,25 @@ def render_dashboard_view() -> None:
             st.warning("CSV 데이터를 불러올 수 없습니다.")
     except Exception as e:
         st.error(f"다운로드 서버 연결 오류: {e}")
+
+    # --- DB 로그 초기화 (테스트용) ---
+    with st.expander("⚠️ 위험 구역: DB 초기화 (테스트용)"):
+        st.warning("주의: 모든 보안 로그가 영구적으로 삭제됩니다. 반드시 CSV를 먼저 다운로드하세요.")
+        if st.button("🚨 모든 로그 삭제", type="primary"):
+            try:
+                res = requests.delete(
+                    f"{API_URL}/admin/clear-logs",
+                    headers={"Authorization": f"Bearer {st.session_state.token}"},
+                    timeout=10,
+                )
+                if res.status_code == 200:
+                    st.toast("✅ 로그가 성공적으로 초기화되었습니다!", icon="🗑️")
+                    time.sleep(1.5)
+                    st.rerun()
+                else:
+                    st.error("초기화 실패: 백엔드 서버 오류")
+            except Exception as e:
+                st.error(f"서버 연결 오류: {e}")
 
     with st.spinner("보안 로그 불러오는 중..."):
         logs = api_admin_logs(st.session_state.token)
