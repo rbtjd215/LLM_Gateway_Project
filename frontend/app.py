@@ -530,7 +530,7 @@ def render_chat_view() -> None:
                 )
 
     # 채팅 입력 (st.chat_input 제약사항 준수)
-    if prompt := st.chat_input("질문을 입력하세요... (예: DWG-2026-X1 도면의 공차 기준은?)"):
+    if prompt := st.chat_input("질문을 입력하세요... (예: 다음 텍스트를 요약해줘 [대상: EMP-123, 내용: ...])"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user", avatar="👤"):
             safe_prompt = html.escape(prompt)

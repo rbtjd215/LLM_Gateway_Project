@@ -44,7 +44,7 @@ from app.auth import (
     get_admin_user,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
-from app.security_core import check_intent, mask_sensitive_data, unmask_data
+from app.security_core import check_security, unmask_response
 
 # ── 비밀번호 해시 컨텍스트 (bcrypt) ───────────────────────────────────────────
 _pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -148,55 +148,66 @@ def login(
     tags=["채팅 (Chat)"],
     summary="AI 게이트웨이 채팅",
     description="""
-    **[보안 파이프라인 - 팀원 B 모듈 통합 완료]**
+    **[V3 하이브리드 지능형 보안 파이프라인]**
 
-    1. **1차 보안 — 의도 분석:** `check_intent`로 Prompt Injection 탐지 → 위험 시 403 차단
-    2. **2차 보안 — NER 마스킹:** `mask_sensitive_data`로 기밀 데이터를 `[MASKED_EMP_난수]` 토큰으로 치환
-    3. **Redis 캐싱:** 매핑 딕셔너리를 UUID 키로 Redis에 TTL 300초 저장
+    1. **Phase 1 — 정규식 마스킹:** 기밀 데이터를 __MASK 토큰으로 초고속 치환
+    2. **Phase 2 — Ollama Guard:** llama-guard3 문맥 기반 의도 분류 (safe/unsafe)
+    3. **Phase 3 — NER 마스킹:** KoBERT NER 모델 2차 마스킹
     4. **LLM 추론:** 마스킹된 안전한 텍스트만 LLM에 전송
-    5. **응답:** AI 응답 + X-Mask-Session-Id 헤더 반환
+    5. **역치환:** AI 응답의 마스킹 토큰을 원본으로 복원
     """,
 )
-def chat(
+async def chat(
     request: ChatRequest,
     current_user: User = Depends(get_current_user),  # JWT 인증 의존성
     db: Session = Depends(get_db),                    # DB 세션 (보안 로그 기록용)
 ):
     """
-    보안 파이프라인 처리 + 각 단계별 DB 로그 기록:
-        [1] check_intent        → 탐지 시 DB BLOCKED 기록 후 403 반환
-        [2] mask_sensitive_data  → 기밀 탐지 시 [MASKED_*] 토큰 치환 + DB 기록
-        [3] Redis 캐싱           → mapping_dict를 UUID 키로 Redis에 TTL 300초 저장
-        [4] Gemini LLM           → 마스킹된 텍스트로 실제 추론 요청
-        [5] 응답 반환             → AI 응답 + X-Mask-Session-Id 헤더
+    V3 하이브리드 보안 파이프라인:
+        [1] check_security  → Phase 1(정규식) + Phase 2(Ollama Guard) + Phase 3(NER)
+        [2] 차단 시 DB BLOCKED 기록 후 403 반환
+        [3] 통과 시 마스킹 결과 DB 기록 + LLM 추론 + 역치환
     """
-    # ── [1단계] 의도 분석: 프롬프트 인젝션 탐지 ────────────────────────────
-    is_malicious, block_reason = check_intent(request.prompt)
-    if is_malicious:
-        # 차단 이벤트 → DB 기록 후 403 반환
-        _log_security_event(
-            db=db,
-            employee_num=current_user.employee_num,
-            action="CHAT_REQUEST",
-            detected_threat=f"PROMPT_INJECTION: {block_reason}",
-            log_status="BLOCKED",
-            prompt=request.prompt,
-            masked_prompt="",
-            mapping_dict=None,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"[보안 차단] {block_reason}",
-        )
+    # ── [1단계] V3 통합 보안 파이프라인 ────────────────────────────
+    try:
+        security_result = await check_security(request.prompt)
+    except HTTPException as sec_exc:
+        if sec_exc.status_code == 403:
+            # Ollama Guard 또는 정규식에 의해 차단됨
+            _log_security_event(
+                db=db,
+                employee_num=current_user.employee_num,
+                action="CHAT_REQUEST",
+                detected_threat=f"PROMPT_INJECTION: {sec_exc.detail}",
+                log_status="BLOCKED",
+                prompt=request.prompt,
+                masked_prompt="",
+                mapping_dict=None,
+            )
+        raise  # 403, 503, 504 등 그대로 전파
 
-    # ── [2단계] 마스킹: 기밀 데이터 → 동적 난수 토큰 치환 ──────────────────
-    # mask_sensitive_data: EMP-\d{3}(사원번호), DWG-\d{4}-[A-Z]\d(도면번호) 등
-    # re 모듈 기반 NER 패턴을 일괄 탐지하여 [TOKEN_난수]로 비식별화
-    masked_text, mapping = mask_sensitive_data(request.prompt)
+    masked_text = security_result["masked_text"]
+    mapping = security_result["mapping"]
 
-    # 마스킹 결과에 따라 MASKED / ALLOWED 분류 후 DB 기록
+    # ── [2단계] 마스킹 결과 DB 로그 기록 ────────────────────────────
     if mapping:
         leaked_values = ", ".join(mapping.values())
+        
+        regex_map = security_result.get("regex_mapping", {})
+        llm_map = security_result.get("llm_mapping", {})
+        
+        # [추가] 터미널 캡처용 실제 서버 로그 형태의 출력 (전반부)
+        import time
+        ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[{ts}] [SecurityCore] [INFO] Intercepted incoming prompt (len: {len(request.prompt)})")
+        if regex_map:
+            print(f"[{ts}] [SecurityCore:Phase1] [WARN] Pattern match: {list(regex_map.values())} -> {list(regex_map.keys())}")
+        if llm_map:
+            print(f"[{ts}] [SecurityCore:Phase3] [WARN] AI-Context match: {list(llm_map.values())} -> {list(llm_map.keys())}")
+        print(f"[{ts}] [AutoCore:Egress] [SECURE] Transmitting masked payload to external LLM:")
+        print(f"    PAYLOAD: {masked_text}")
+
+        
         _log_security_event(
             db=db,
             employee_num=current_user.employee_num,
@@ -220,35 +231,32 @@ def chat(
         )
 
     # ── [3단계] LLM 추론: Gemini로 실제 AI 응답 생성 ──────────────────
-    #    마스킹된 안전한 텍스트(masked_text)만 외부 LLM에 전송
     try:
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="[설정 오류] GEMINI_API_KEY 환경 변수가 설정되지 않았습니다.",
+        if os.getenv('USE_MOCK_LLM') == 'True':
+            ai_response: str = f"[MOCK MODE] Echo response for testing unmasking: {masked_text}"
+        else:
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="[설정 오류] GEMINI_API_KEY 환경 변수가 설정되지 않았습니다.",
+                )
+            gemini_response = client.models.generate_content(
+                model="gemini-3-flash-preview",
+                contents=masked_text
             )
-
-        # V2 SDK 최신 문법으로 추론 요청 (gemini-3-flash-preview 모델 사용)
-        gemini_response = client.models.generate_content(
-            model="gemini-3-flash-preview",
-            contents=masked_text
-        )
-        ai_response: str = gemini_response.text
+            ai_response: str = gemini_response.text
 
     except HTTPException:
-        # HTTPException은 그대로 re-raise (위의 API 키 누락 에러)
         raise
     except Exception as exc:  # noqa: BLE001
-        # 네트워크 오류, 할당량 초과, 잘못된 응답 등 API 관련 예외
-        print(f"[AI 추론 오류 발생] 상세 내역: {exc}")  # 서버 터미널에만 출력
+        print(f"[AI error] {exc}")
         raise HTTPException(
             status_code=500,
-            detail="AI 서비스 일시 장애. 잠시 후 다시 시도해주세요.",
+            detail="AI service error. Please retry.",
         )
 
-    # ── [4단계] Redis 캐싱: 매핑 딕셔너리를 임시 저장 ─────────────────
-    #    추후 unmask_data 역치환 시 이 매핑을 Redis에서 조회하여 사용
+    # ── [4단계] Redis 캐싱 ─────────────────────────────────────
     mask_session_id = str(uuid.uuid4())
     if mapping:
         _redis_client.setex(
@@ -257,13 +265,19 @@ def chat(
             json.dumps(mapping, ensure_ascii=False),
         )
 
-    # ── [5단계] 역치환: AI 응답 내 마스킹 토큰 → 원본 기밀 데이터 복원 ────
-    #    mapping_dict에 저장된 {토큰: 원본} 쌍을 순회하며 replace 처리
-    final_response = ai_response
-    for mask_token, original_text in mapping.items():
-        final_response = final_response.replace(mask_token, original_text)
+    # ── [5단계] 역치환: 공백 변형 허용 유연 복원 ────────────────────
+    final_response = unmask_response(ai_response, mapping)
 
-    # ── [6단계] 응답 반환: 역치환 완료된 텍스트 + X-Mask-Session-Id 헤더 ──
+    # [추가] 터미널 캡처용 실제 서버 로그 형태의 출력 (후반부)
+    if mapping:
+        import time
+        ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[{ts}] [AutoCore:Ingress] [INFO] Received response from external LLM:")
+        print(f"    RAW_RESPONSE: {ai_response}")
+        print(f"[{ts}] [SecurityCore] [INFO] De-masking complete. Restored {len(mapping)} token(s).")
+        print(f"[{ts}] [AutoCore] [SUCCESS] Request successfully fulfilled.")
+
+    # ── [6단계] 응답 반환 ──────────────────────────────────────
     return JSONResponse(
         content={"response": final_response},
         headers={"X-Mask-Session-Id": mask_session_id},

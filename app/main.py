@@ -98,8 +98,12 @@ async def lifespan(app: FastAPI):
 
     # 초기 시드 데이터 삽입
     _seed_initial_data()
-    print("[AutoCore] 게이트웨이 준비 완료 ✓  → http://localhost:8000/docs")
-    yield
+    from app.security_core import security_lifespan
+    
+    # 보안 코어 Lifespan 호출 (httpx 클라이언트 전역 초기화 등)
+    async with security_lifespan(app):
+        print("[AutoCore] 게이트웨이 준비 완료 ✓  → http://localhost:8000/docs")
+        yield
     print("[AutoCore] 게이트웨이 종료")
 
 
@@ -133,7 +137,12 @@ app = FastAPI(
 # [제약사항 2] 팀원 A의 Streamlit 앱이 어떤 포트에서 실행되더라도 API 호출 가능하도록 전체 허용
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],       # 모든 출처 허용 (팀원 A Streamlit 연동)
+    allow_origins=[
+        "http://localhost:8501", 
+        "http://127.0.0.1:8501", 
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000"
+    ], # 팀원 A Streamlit 연동을 위한 로컬 호스트 허용 (보안 규칙 준수)
     allow_credentials=True,
     allow_methods=["*"],       # GET, POST, PUT, DELETE 등 모두 허용
     allow_headers=["*"],       # Authorization 헤더 포함 모두 허용

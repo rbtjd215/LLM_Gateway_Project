@@ -16,3 +16,7 @@ postgres_data/
 .vscode/
 .idea/
 *.swp
+
+# Logs
+logs/
+*.log

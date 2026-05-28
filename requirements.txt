@@ -4,7 +4,7 @@ uvicorn[standard]==0.29.0
 
 # Database ORM (제약사항 4: SQLAlchemy 강제)
 sqlalchemy==2.0.30
-psycopg2-binary==2.9.9
+psycopg2-binary>=2.9.9
 
 # Redis (마스킹 토큰 인메모리 저장 - B 모듈 연동 시 사용)
 redis==5.0.4
@@ -23,7 +23,10 @@ python-dotenv==1.0.1
 python-multipart==0.0.9
 
 # 데이터 검증
-pydantic==2.7.1
+pydantic>=2.7.1
 
 # Google Gemini AI
 google-genai
+
+# Ollama 비동기 HTTP 통신 (V3 하이브리드 파이프라인)
+httpx

@@ -71,6 +71,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Docker 내부에서 호스트 머신의 Ollama(11434)에 접근 가능하도록 설정
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - autocore_net
 
