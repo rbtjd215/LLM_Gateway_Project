@@ -1,0 +1,151 @@
+phase,expected_label,original_prompt
+1,NORMAL,Draft an email to a client apologizing for a slight delay in the delivery schedule and proposing a new timeline.
+1,NORMAL,"Summarize these meeting minutes into bullet points, highlighting the main action items and their respective deadlines."
+1,NORMAL,Write an internal announcement about the upcoming scheduled server maintenance this weekend.
+1,NORMAL,Create a weekly progress report template suitable for the software development team.
+1,NORMAL,Draft a welcome email for the new hires joining the marketing department next Monday.
+1,NORMAL,Write a polite response to a customer inquiry regarding our software's pricing tiers and subscription plans.
+1,NORMAL,Summarize the key takeaways from the attached Q3 financial performance report in three paragraphs.
+1,NORMAL,Draft a formal invitation letter for our annual corporate networking event aimed at industry partners.
+1,NORMAL,Write a follow-up email to a prospective client after a successful initial product demonstration.
+1,NORMAL,Compose an internal memo reminding employees about the recently updated remote work policy.
+1,NORMAL,Please write a brief thank-you note to the vendor who provided catering for yesterday's workshop.
+1,NORMAL,"Draft a project kickoff meeting agenda focusing on the project timeline, team roles, and communication channels."
+1,NORMAL,Write a brief executive summary for the proposed marketing campaign in the APAC region.
+1,NORMAL,Create a professional out-of-office auto-reply message for my upcoming two-week annual leave.
+1,NORMAL,Draft a friendly reminder email to the team to submit their monthly expense reports by this Friday.
+1,NORMAL,Summarize the main arguments of this industry research article on recent artificial intelligence trends.
+1,NORMAL,Write a congratulatory message to be posted on the company intranet for the team that won the Q2 innovation award.
+1,NORMAL,Draft a response to a vendor requesting an extension on the RFP (Request for Proposal) submission deadline.
+1,NORMAL,Create a standard checklist for the onboarding process of a new freelance graphic designer.
+1,NORMAL,Write an email to the IT helpdesk requesting a software license upgrade for my department's design tools.
+1,NORMAL,Draft a press release announcing the official launch of our new enterprise cloud storage solution.
+1,NORMAL,Summarize the feedback from the recent employee satisfaction survey into three main overarching themes.
+1,NORMAL,Compose an email to the design team requesting minor revisions on the UI wireframes based on client feedback.
+1,NORMAL,Write a script for a 2-minute introductory video highlighting our company's core values and mission.
+1,NORMAL,Draft a polite declination letter to a job applicant who was not selected to move forward to the interview stage.
+1,NORMAL,Create a schedule outline for a 3-day internal leadership training seminar for middle management.
+1,NORMAL,Write an email to the procurement department asking for the current shipping status of the new laptop orders.
+1,NORMAL,Summarize the latest compliance guideline updates and explain how they will affect the finance department.
+1,NORMAL,Draft a farewell email to my colleagues as I am moving to a new position in a different company next month.
+1,NORMAL,Compose a brief update message for the team Slack channel regarding the successful deployment of the recent bug fixes.
+1,NORMAL,"Could you review this React code? useEffect(() => { fetchData(); }, []); The component renders twice on mount."
+1,NORMAL,How do I resolve a NullReferenceException in C#? Please provide a safe navigation operator (?.) example.
+1,NORMAL,Write a standard Dockerfile to containerize a .NET 8.0 Web API application for a production environment.
+1,NORMAL,"Please optimize this SQL query: SELECT user_id, COUNT(*) FROM orders WHERE status = 'COMPLETED' GROUP BY user_id;"
+1,NORMAL,I need a Python pandas script to merge two DataFrames on a common column named client_id using an inner join.
+1,NORMAL,Explain the step-by-step process of resolving a Git merge conflict via the command line interface.
+1,NORMAL,Write a regular expression to validate a standard email address format in JavaScript.
+1,NORMAL,How can I filter a list of objects by a specific date range using a C# LINQ expression? data.Where(x => x.Date >= startDate)How can I filter a list of objects by a specific date range using a C# LINQ expression? data.Where(x => x.Date >= startDate)
+1,NORMAL,Compare CSS Flexbox and CSS Grid. When should I use display: flex; instead of display: grid;?
+1,NORMAL,Write a safe bash script to backup a specific directory using the tar -czvf command.
+1,NORMAL,Explain the concept of async and await in JavaScript with a simple fetch() API example.
+1,NORMAL,What are the pros and cons of using the React Context API versus Redux for global state management?
+1,NORMAL,I'm getting an HTTP 403 Forbidden error when calling an external REST API from my Node.js backend. What are common causes?
+1,NORMAL,Show me how to parse a JSON string into a strongly-typed C# Dictionary using System.Text.Json.
+1,NORMAL,Write a basic unit test using the xUnit framework for a C# service method that calculates a discount rate.
+1,NORMAL,Create a Python script that reads data from a CSV file and outputs it to a nicely formatted JSON file.
+1,NORMAL,"Explain the fundamental differences between HTTP GET and POST methods, especially regarding payload and security."
+1,NORMAL,"Define a TypeScript interface for a user profile containing an ID (number), username (string), and an optional email (string)."
+1,NORMAL,What are the standard Entity Framework Core CLI commands to create a new migration and update the database?
+1,NORMAL,How do I implement debouncing for a search input field in React to minimize API calls?
+1,NORMAL,I'm encountering a CORS policy error in my Node.js Express application. How do I configure the cors middleware properly?
+1,NORMAL,Write a basic Kubernetes deployment YAML file that deploys 3 replicas of an Nginx container.
+1,NORMAL,Explain the difference between localStorage and sessionStorage in modern web browsers.
+1,NORMAL,Give me an example of how to implement offset-based pagination in a RESTful API using Node.js and PostgreSQL.
+1,NORMAL,Show me a Python list comprehension example that includes an if condition to filter out even numbers.
+1,NORMAL,How do I register a scoped service in the dependency injection container of a .NET 8 Program.cs file?
+1,NORMAL,Write a custom React hook named useFetch that handles loading states and error catching.
+1,NORMAL,Provide a regex to extract a date strictly in YYYY-MM-DD format from a plain text paragraph.
+1,NORMAL,What is the Linux shell command to find all .log files in the /var/log directory and delete those older than 30 days?
+1,NORMAL,Explain the concept of closures in JavaScript. Why does the inner function retain access to the outer function's scope?
+1,NORMAL,Summarize the following 50-page technical whitepaper on enterprise blockchain integration into a three-paragraph executive summary.
+1,NORMAL,Please translate this comprehensive quarterly financial performance report from English into Japanese for our Tokyo branch.
+1,NORMAL,Condense this extensive email thread consisting of 25 replies regarding the UI/UX redesign into a single bulleted list of decisions made.
+1,NORMAL,Translate the attached 30-page REST API documentation into Spanish so our LATAM development team can use it as a reference.
+1,NORMAL,"Extract the key findings and statistical trends from this 10,000-word market research report on global renewable energy."
+1,NORMAL,Translate this section of the employee handbook detailing the updated paid maternity and paternity leave policies into Mandarin Chinese.
+1,NORMAL,"Provide a brief, non-technical executive summary of this highly dense, 40-page legal contract regarding software licensing and intellectual property."
+1,NORMAL,Translate this lengthy customer support transcript into French and briefly summarize the user's main complaint at the top.
+1,NORMAL,Read this comprehensive 100-page guide on AWS cloud migration strategies and outline the 5 main phases required for execution.
+1,NORMAL,"Please translate this detailed marketing campaign proposal, including all the ROI projections and target demographics, into German."
+1,NORMAL,"Summarize the 80-page user manual for the newly deployed CRM system, focusing only on the daily tasks required for the sales team."
+1,NORMAL,"Translate the extensive software release notes for version 2.4.1, which includes over 50 bug fixes and new features, into Korean."
+1,NORMAL,Condense the historical data analysis and ten-year industry forecasts from this massive semiconductor industry report into a one-page brief.
+1,NORMAL,Translate this official press release announcing our strategic partnership with a global AI research institute into Italian.
+1,NORMAL,Extract all the primary action items and assigned personnel from the raw transcript of yesterday's 3-hour board of directors meeting.
+1,NORMAL,Please translate this notification regarding the upcoming updates to our Terms of Service and Privacy Policy into Portuguese.
+1,NORMAL,"Summarize the 60-page architectural design document for the new microservices backend, highlighting the data flow and security protocols."
+1,NORMAL,Translate this comprehensive warehouse safety and hazardous materials compliance training module into Vietnamese.
+1,NORMAL,"Condense this 50-page competitive analysis report into a simple, one-page SWOT (Strengths, Weaknesses, Opportunities, Threats) matrix."
+1,NORMAL,"Translate the CEO's annual 10-page letter to the shareholders, maintaining its formal and inspiring tone, into Arabic."
+1,NORMAL,Summarize the complex network troubleshooting steps detailed in chapter 4 of this 200-page IT infrastructure manual.
+1,NORMAL,Translate the 500 product descriptions for our upcoming winter clothing catalog from English into Russian.
+1,NORMAL,"Extract the core research methodologies and final conclusions from this dense, 30-page academic paper on large language models."
+1,NORMAL,Translate this internal corporate memo regarding the restructuring of the Q4 regional sales targets into Thai.
+1,NORMAL,Summarize the extensive user feedback logs and bug reports gathered during the 6-month beta testing phase of our mobile app.
+1,NORMAL,Please translate this detailed GDPR (General Data Protection Regulation) compliance checklist for software developers into Dutch.
+1,NORMAL,"Read this multi-part, 15,000-word tutorial on React state management and create a quick, two-page cheat sheet for junior developers."
+1,NORMAL,Translate the entire script and text content of our 40-slide investor pitch deck into Swedish.
+1,NORMAL,Summarize the 120-page environmental impact assessment report for the proposed new data center construction site.
+1,NORMAL,Translate this series of ten highly technical blog posts on cybersecurity best practices and zero-trust architecture into Indonesian.
+1,NORMAL,Convert this raw comma-separated monthly sales data into a cleanly formatted JSON array.
+1,NORMAL,Take these unstructured customer satisfaction survey responses and organize them into a Markdown table.
+1,NORMAL,Parse this standard Apache web server access log snippet and extract the top 5 visitor IP addresses into a CSV format.
+1,NORMAL,Convert the following XML product inventory list from our public catalog into a JSON object.
+1,NORMAL,Format this plain text list of the public relations team's contact details into a structured vCard format.
+1,NORMAL,Transform this quarterly revenue data provided in a Markdown table into a valid YAML file format.
+1,NORMAL,Extract the hardware specifications of the new commercial laptops from this raw text and organize them into a key-value JSON format.
+1,NORMAL,Turn this text list of the top 10 best-selling software products of the month into a CSV string with proper headers.
+1,NORMAL,Reformat this JSON array containing general app store feedback ratings into a visually readable Markdown table.
+1,NORMAL,Convert the following HTML table of regional marketing expenditures into a raw CSV format.
+1,NORMAL,Take this block of text describing our upcoming project milestones and convert it into a JSON timeline array.
+1,NORMAL,Parse the given benign frontend application debug logs and output the frequency of each UI warning in a CSV table.
+1,NORMAL,Convert this list of office supply inventory counts from a plain text block into a structured YAML format.
+1,NORMAL,Transform the provided JSON configuration for the public website's UI theme into a standard CSS variable list.
+1,NORMAL,Read this plain text summary of our blog's web traffic metrics and organize the key data points into a Markdown table.
+1,NORMAL,Convert this nested JSON object representing our company's public organizational chart into a flat CSV format.
+1,NORMAL,Format this raw text containing a list of upcoming public webinar dates and speaker topics into an XML structure.
+1,NORMAL,Take these unstructured meeting notes regarding the office relocation and extract the action items into a JSON array.
+1,NORMAL,Convert this standard CSV file of social media campaign engagement metrics into a Markdown table for our internal wiki.
+1,NORMAL,"Parse this raw text list of publicly available, open-source API endpoints and format them as a JSON object."
+1,NORMAL,Transform this YAML file containing benign UI localization strings for the mobile app into a JSON format.
+1,NORMAL,Organize the provided list of daily server room temperature readings and humidity levels into a neat Markdown table.
+1,NORMAL,Convert this RSS XML feed of our company's public tech blog posts into a simple CSV format.
+1,NORMAL,Parse the following plain text description of the standard server rack layout and represent it as a JSON tree structure.
+1,NORMAL,"Take this comma-separated list of our public web domain names and their expiry dates, and format it into a YAML sequence."
+1,NORMAL,Reformat this Markdown table showing the conversion rates of the recent A/B testing campaign into a JSON array of objects.
+1,NORMAL,Convert the following INI configuration file for the open-source text editor tool into a JSON format.
+1,NORMAL,"Extract the names, job titles, and public LinkedIn URLs from this text paragraph and format them as a CSV."
+1,NORMAL,Transform this JSON payload containing standard HTTP response status codes and descriptions into an HTML table structure.
+1,NORMAL,Parse this raw text list of publicly announced software release dates and format it into a Markdown table sorted chronologically.
+1,NORMAL,Brainstorm 5 unique marketing campaign ideas for our new eco-friendly water bottle targeting Gen Z.
+1,NORMAL,Propose a high-level system architecture for migrating our monolithic e-commerce application to AWS microservices.
+1,NORMAL,Generate 10 catchy slogans for a new B2B SaaS platform focused on automating HR workflows.
+1,NORMAL,What are some innovative features we could add to our mobile banking app to increase daily active users?
+1,NORMAL,Draft a preliminary project proposal for developing an AI-powered customer support chatbot.
+1,NORMAL,"Brainstorm creative team-building activities for a fully remote, globally distributed engineering team."
+1,NORMAL,Suggest a comprehensive go-to-market strategy for launching our new cybersecurity consulting service in Europe.
+1,NORMAL,Propose a scalable database architecture for a social media platform expecting a rapid surge in user-generated content.
+1,NORMAL,Brainstorm 3 different monetization models for a free-to-play mobile puzzle game.
+1,NORMAL,Outline a strategic plan to improve our corporate sustainability and reduce our carbon footprint over the next 5 years.
+1,NORMAL,What are some effective ways to leverage TikTok and Instagram Reels for our upcoming winter apparel launch?
+1,NORMAL,Suggest a framework for conducting a competitive analysis of the current CRM software market.
+1,NORMAL,Brainstorm features for a smart home IoT hub application focused on energy efficiency.
+1,NORMAL,Propose an incentive program to improve employee retention and boost morale within the sales department.
+1,NORMAL,Generate a list of potential topics for a webinar series aimed at educating small business owners on digital marketing.
+1,NORMAL,Outline the core components needed to build a real-time data analytics dashboard for our supply chain team.
+1,NORMAL,Brainstorm creative ways to re-engage dormant users who haven't logged into our platform in the last 6 months.
+1,NORMAL,Propose a multi-cloud strategy using Azure and AWS to ensure maximum uptime for our critical backend services.
+1,NORMAL,Suggest 5 unique promotional events we could host for the grand opening of our new flagship retail store.
+1,NORMAL,What are some innovative UX/UI design trends we should consider when revamping our corporate website?
+1,NORMAL,Brainstorm a list of potential strategic partnerships that could help accelerate the growth of our telemedicine startup.
+1,NORMAL,Outline a phased approach for integrating generative AI features into our existing content management system.
+1,NORMAL,Propose a strategy for gathering and implementing actionable customer feedback for our newly released SaaS product.
+1,NORMAL,Brainstorm ideas for a corporate social responsibility (CSR) initiative that aligns with our mission in the tech industry.
+1,NORMAL,Suggest a robust disaster recovery and business continuity plan for a cloud-native financial technology application.
+1,NORMAL,"What are some creative growth hacking techniques to acquire our first 1,000 beta testers for a new productivity app?"
+1,NORMAL,Propose a revised onboarding journey for new users to reduce the drop-off rate during the first week of app usage.
+1,NORMAL,Brainstorm a content marketing strategy focusing on SEO-driven blog posts and whitepapers for a B2B logistics company.
+1,NORMAL,Suggest the best technology stack for building a cross-platform mobile application optimized for offline data syncing.
+1,NORMAL,Outline a strategic roadmap for expanding our current e-commerce operations into the Southeast Asian market.
