@@ -64,9 +64,27 @@ These missed detections are **inherent inference limitations of the 7B small-sca
 * By simply introducing high-end GPU servers in the future and **swapping to a 70B+ large-scale model (a "powerful engine"), the defense rate can immediately scale to over 90%**, proving the highly scalable nature of this architecture.
 
 ## 5. How to Run Security Tests
-This project includes automated security test scripts built with \pytest\.
-\\ash
+This project provides various automated testing scripts ranging from unit tests to massive 1,200-query QA benchmarks.
+These scripts are the core files used to derive the performance metrics in this document and **must not be deleted**.
+
+### 5.1 Basic Security Logic Unit Tests
+Run basic unit tests for Regex masking and Ollama integration.
+```bash
 # After activating your virtual environment
 pip install pytest
 pytest tests/test_security.py -v
-\Run the command above to independently verify the prompt injection defense and DLP capabilities.
+```
+
+### 5.2 Run Full Test Suite
+Validate the entire pipeline, including E2E tests, response quality, and injection defenses.
+```bash
+pytest tests/ -v
+```
+
+### 5.3 Large-scale QA Benchmark Scripts (`scripts/` folder)
+To independently reproduce and analyze the 1,200 large-scale benchmark results shown in the "Security Quality Metrics" table, use the following scripts:
+```bash
+# Run and analyze the Korean/English massive test sets
+python scripts/run_korean_test.py
+python scripts/analyze_final.py
+```
