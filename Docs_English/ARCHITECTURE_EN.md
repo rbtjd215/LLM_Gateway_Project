@@ -10,32 +10,55 @@ The AutoCore Gateway is deployed independently within the corporate on-premise n
 
 ```mermaid
 flowchart TD
+    %% Style Definitions
+    classDef user fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#000
+    classDef core fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef logic fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef db fill:#ede7f6,stroke:#5e35b1,stroke-width:2px,color:#000
+    classDef danger fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#000
+    classDef external fill:#eceff1,stroke:#455a64,stroke-width:2px,color:#000
+
+    Client(["Employee (Web UI)"]):::user
+    
     subgraph "On-Premise Network"
-        Client(Employee Web UI) -->|Prompt Input| Gateway[AI Security Gateway / FastAPI]
+        Gateway["AI Security Gateway (FastAPI)"]:::core
         
-        subgraph "Hybrid Security Engine"
-            Gateway --> P1[Phase 1: High-Speed Regex Masking]
-            P1 -->|Parallel Processing| P2[Phase 2: LLM Intent Classification]
-            P1 -->|Parallel Processing| P3[Phase 3: Generative Masking]
+        subgraph "Hybrid Security Engine (Parallel Processing)"
+            direction LR
+            P1["Phase 1: High-Speed Regex Masking"]:::logic --> P2["Phase 2: LLM Intent Classification"]:::logic
+            P1 --> P3["Phase 3: Generative Masking"]:::logic
         end
         
-        LocalLLM[(Local Model: Qwen2.5 7B)] -.->|Analyze & Extract| P2
-        LocalLLM -.->|Analyze & Extract| P3
+        LocalLLM[("Local Model (Qwen2.5)")]:::db
         
-        DB[(PostgreSQL)] -.->|Save Audit Log| Gateway
-        Redis[(Redis)] -.->|Temp Store Mask Tokens| Gateway
+        subgraph "Data Storage"
+            direction LR
+            DB[("PostgreSQL (Audit Log)")]:::db
+            Redis[("Redis (Token Cache)")]:::db
+        end
         
-        Gateway --> Demask[Phase 4: De-masking Restoration]
+        Demask["Phase 4: De-masking Restoration"]:::core
+        Block(["Block & Warn (Return to User)"]):::danger
     end
     
-    subgraph "Public Cloud"
-        ExternalLLM[External Commercial AI / Gemini, etc.]
-    end
+    ExternalLLM{{"Public Cloud AI (Gemini, etc.)"}}:::external
+
+    %% Flow Connections
+    Client == "Prompt Input" ==> Gateway
+    Gateway ==> P1
     
-    P2 -- Block --> Block[Return Warning to User]
-    P3 -- Approve & Mask --> ExternalLLM
-    ExternalLLM -- Masked Response --> Demask
-    Demask -- Final Restored Response --> Client
+    P2 == "Threat Detected" ==> Block
+    P3 == "Masked Prompt" ==> ExternalLLM
+    
+    ExternalLLM == "Masked Response" ==> Demask
+    Demask == "Final Restored Response" ==> Client
+    
+    %% Auxiliary Connections
+    LocalLLM -. "Analyze Intent" .-> P2
+    LocalLLM -. "Extract Data" .-> P3
+    
+    Gateway -. "Save Log" .-> DB
+    Gateway -. "Store Token" .-> Redis
 ```
 
 ---

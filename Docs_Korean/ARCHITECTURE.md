@@ -10,32 +10,55 @@ AutoCore 게이트웨이는 사내망에 독립적으로 구축되며, 임직원
 
 ```mermaid
 flowchart TD
+    %% 스타일 정의
+    classDef user fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#000
+    classDef core fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef logic fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef db fill:#ede7f6,stroke:#5e35b1,stroke-width:2px,color:#000
+    classDef danger fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#000
+    classDef external fill:#eceff1,stroke:#455a64,stroke-width:2px,color:#000
+
+    Client(["임직원 (Web UI)"]):::user
+    
     subgraph "사내망 (On-Premise)"
-        Client(임직원 Web UI) -->|프롬프트 입력| Gateway[AI 보안 게이트웨이 / FastAPI]
+        Gateway["AI 보안 게이트웨이 (FastAPI)"]:::core
         
-        subgraph "하이브리드 보안 엔진"
-            Gateway --> P1[Phase 1: 정규식 고속 마스킹]
-            P1 -->|병렬 처리| P2[Phase 2: LLM 의도 분류]
-            P1 -->|병렬 처리| P3[Phase 3: 생성형 마스킹]
+        subgraph "하이브리드 보안 엔진 (병렬 처리)"
+            direction LR
+            P1["Phase 1: 정규식 고속 마스킹"]:::logic --> P2["Phase 2: LLM 의도 분류"]:::logic
+            P1 --> P3["Phase 3: 생성형 마스킹"]:::logic
         end
         
-        LocalLLM[(로컬 모델: Qwen2.5 7B)] -.->|판단 및 추출| P2
-        LocalLLM -.->|판단 및 추출| P3
+        LocalLLM[("로컬 모델 (Qwen2.5)")]:::db
         
-        DB[(PostgreSQL)] -.->|감사 로그 저장| Gateway
-        Redis[(Redis)] -.->|마스킹 토큰 임시 저장| Gateway
+        subgraph "데이터 저장소"
+            direction LR
+            DB[("PostgreSQL (감사 로그)")]:::db
+            Redis[("Redis (토큰 캐싱)")]:::db
+        end
         
-        Gateway --> Demask[Phase 4: 역치환 복원]
+        Demask["Phase 4: 역치환 복원"]:::core
+        Block(["차단 및 경고 (사용자 반환)"]):::danger
     end
     
-    subgraph "외부망 (Public Cloud)"
-        ExternalLLM[외부 상용 AI / Gemini 등]
-    end
+    ExternalLLM{{"외부 상용 AI (Gemini 등)"}}:::external
+
+    %% 흐름 연결
+    Client == "프롬프트 입력" ==> Gateway
+    Gateway ==> P1
     
-    P2 -- 차단 --> Block[사용자에게 경고 반환]
-    P3 -- 승인 및 마스킹 --> ExternalLLM
-    ExternalLLM -- 마스킹된 응답 --> Demask
-    Demask -- 최종 복원 응답 --> Client
+    P2 == "위협 탐지" ==> Block
+    P3 == "마스킹된 질의" ==> ExternalLLM
+    
+    ExternalLLM == "마스킹된 응답" ==> Demask
+    Demask == "최종 원본 응답" ==> Client
+    
+    %% 보조 연결
+    LocalLLM -. "의도 판별" .-> P2
+    LocalLLM -. "비정형 추출" .-> P3
+    
+    Gateway -. "로그 기록" .-> DB
+    Gateway -. "토큰 저장" .-> Redis
 ```
 
 ---
