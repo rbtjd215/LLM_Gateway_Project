@@ -1,6 +1,6 @@
-# AutoCore AI Security Gateway 설치 및 실행 가이드
+# LLM Security Gateway 설치 및 실행 가이드
 
-본 문서는 사용자의 로컬 PC 환경에 AutoCore 게이트웨이(PoC) 환경을 구축하고 실행하는 방법을 안내한다.
+본 문서는 사용자의 로컬 PC 환경에 LLM 게이트웨이(PoC) 환경을 구축하고 실행하는 방법을 안내한다.
 
 ---
 
@@ -73,7 +73,7 @@ docker-compose up --build -d
 ```bash
 docker-compose logs -f api
 ```
-*(로그에 `[AutoCore] Gateway Ready ✓` 메시지가 보이면 성공이다.)*
+*(로그에 `[System] Gateway Ready ✓` 메시지가 보이면 성공이다.)*
 
 ---
 

@@ -150,7 +150,7 @@ graph TD
 
 ## 주요 문서 바로가기
 
-- [**AutoCore AI Security Gateway API 명세서 바로가기**](./Docs_Korean/API_REFERENCE.md)
-- [**AutoCore AI Security Gateway 시스템 아키텍처 바로가기**](./Docs_Korean/ARCHITECTURE.md)
-- [**AutoCore AI Security Gateway 보안 테스트 가이드 바로가기**](./Docs_Korean/SECURITY_TESTING.md)
-- [**AutoCore AI Security Gateway 설치 및 실행 가이드 바로가기**](./Docs_Korean/SETUP_GUIDE.md)
+- [**LLM Security Gateway API 명세서 바로가기**](./Docs_Korean/API_REFERENCE.md)
+- [**LLM Security Gateway 시스템 아키텍처 바로가기**](./Docs_Korean/ARCHITECTURE.md)
+- [**LLM Security Gateway 보안 테스트 가이드 바로가기**](./Docs_Korean/SECURITY_TESTING.md)
+- [**LLM Security Gateway 설치 및 실행 가이드 바로가기**](./Docs_Korean/SETUP_GUIDE.md)

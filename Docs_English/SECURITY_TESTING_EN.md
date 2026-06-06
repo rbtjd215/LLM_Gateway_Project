@@ -1,6 +1,6 @@
-# AutoCore AI Security Gateway Performance & Security Testing Report
+# LLM Security Gateway Performance & Security Testing Report
 
-This document summarizes the performance, defense rate, and latency benchmark test results of the AutoCore Gateway's V4 Hybrid Pipeline (Regex + Local LLM).
+This document summarizes the performance, defense rate, and latency benchmark test results of the LLM Gateway's V4 Hybrid Pipeline (Regex + Local LLM).
 
 ---
 
@@ -38,7 +38,7 @@ The following are the core performance metrics obtained from the 1,200 automated
 
 ## 3. System Latency Benchmarks
 
-The biggest hurdle when deploying a heavy LLM security system on a corporate network is latency. AutoCore drastically reduced this overhead through **Asynchronous Parallel Processing (`asyncio.gather`)**.
+The biggest hurdle when deploying a heavy LLM security system on a corporate network is latency. LLM Gateway drastically reduced this overhead through **Asynchronous Parallel Processing (`asyncio.gather`)**.
 
 | Query Type | Cold Start | **Actual Operation (Warm State)** |
 |---|:---:|:---:|

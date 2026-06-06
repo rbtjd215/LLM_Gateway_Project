@@ -1,6 +1,6 @@
-# AutoCore AI Security Gateway Setup & Execution Guide
+# LLM Security Gateway Setup & Execution Guide
 
-This guide provides instructions on how to set up and run the AutoCore Gateway (PoC) environment on your local machine.
+This guide provides instructions on how to set up and run the LLM Gateway (PoC) environment on your local machine.
 
 ---
 
@@ -73,7 +73,7 @@ To verify that the system is running correctly, check the logs with the followin
 ```bash
 docker-compose logs -f api
 ```
-*(If you see the message `[AutoCore] Gateway Ready ✓` in the logs, it was successful.)*
+*(If you see the message `[System] Gateway Ready ✓` in the logs, it was successful.)*
 
 ---
 

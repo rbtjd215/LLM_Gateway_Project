@@ -1,6 +1,6 @@
-# AutoCore AI Security Gateway API Reference
+# LLM Security Gateway API Reference
 
-This document defines the RESTful API specifications for frontend applications and external clients to communicate with the AutoCore Gateway Backend (FastAPI).
+This document defines the RESTful API specifications for frontend applications and external clients to communicate with the LLM Gateway Backend (FastAPI).
 
 > **Base URL:** `http://localhost:8000` (Docker Environment: `http://api:8000`)  
 > **Swagger UI:** `http://localhost:8000/docs` (Auto-generated documentation)
@@ -115,7 +115,7 @@ Downloads all recorded security logs as a CSV file.
 * **Auth:** Required (Handled by the frontend due to browser download characteristics)
 * **Response (200 OK):**
   * `Content-Type: text/csv`
-  * File download response (`autocore_logs.csv`)
+  * File download response (`gateway_logs.csv`)
 
 ### 3.3 Clear Security Logs (For Testing)
 Deletes all data in the `security_logs` table. Intended for demonstration and testing purposes only.

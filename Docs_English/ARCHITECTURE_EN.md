@@ -1,4 +1,4 @@
-# AutoCore AI Security Gateway System Architecture
+# LLM Security Gateway System Architecture
 
 This document details the system architecture of the **Local LLM-Based Hybrid AI Security Gateway** and the core technologies powering its 3-phase security pipeline.
 
@@ -6,7 +6,7 @@ This document details the system architecture of the **Local LLM-Based Hybrid AI
 
 ## 1. System Overview
 
-The AutoCore Gateway is deployed independently within the corporate on-premise network, acting as a **Security Proxy** between employees (clients) and external commercial LLMs.
+The LLM Gateway is deployed independently within the corporate on-premise network, acting as a **Security Proxy** between employees (clients) and external commercial LLMs.
 
 ```mermaid
 flowchart TD

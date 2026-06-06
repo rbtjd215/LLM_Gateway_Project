@@ -1,4 +1,4 @@
-# AutoCore AI Security Gateway 시스템 아키텍처
+# LLM Security Gateway 시스템 아키텍처
 
 본 문서는 **로컬 LLM 기반 하이브리드 AI 보안 게이트웨이**의 상세 시스템 아키텍처와 3단계 보안 파이프라인의 핵심 기술을 설명한다.
 
@@ -6,7 +6,7 @@
 
 ## 1. 전체 시스템 흐름도 (System Overview)
 
-AutoCore 게이트웨이는 사내망에 독립적으로 구축되며, 임직원(클라이언트)과 외부 상용 LLM 사이의 **보안 프록시(Security Proxy)** 역할을 수행한다.
+LLM 게이트웨이는 사내망에 독립적으로 구축되며, 임직원(클라이언트)과 외부 상용 LLM 사이의 **보안 프록시(Security Proxy)** 역할을 수행한다.
 
 ```mermaid
 flowchart TD
