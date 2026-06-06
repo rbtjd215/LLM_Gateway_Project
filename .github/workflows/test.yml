@@ -25,6 +25,8 @@ jobs:
         pip install pytest
         
     - name: Run Core Logic Tests
+      env:
+        PYTHONPATH: .
       run: |
         # 외부 API나 모델이 필요 없는 정규식 마스킹 및 역치환 단위 테스트만 실행
         pytest tests/test_security.py::TestRegexMasking
