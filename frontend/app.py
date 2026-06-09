@@ -21,8 +21,21 @@ import requests
 import pandas as pd
 from typing import Optional
 
+from i18n import TEXTS
+
 # ── 상수 ─────────────────────────────────────────────────────────────────
 API_URL = os.getenv("API_URL", "http://api:8000")
+
+
+# ── 다국어 헬퍼 ─────────────────────────────────────────────────────────
+def T(key: str) -> str:
+    """현재 세션 언어에 맞는 텍스트를 반환한다."""
+    lang = st.session_state.get("lang", "ko")
+    entry = TEXTS.get(key)
+    if entry is None:
+        return key
+    return entry.get(lang, entry.get("ko", key))
+
 
 # ══════════════════════════════════════════════════════════════════════════
 #  페이지 설정 (반드시 최상단, 다른 st 호출 전에 위치)
@@ -210,6 +223,23 @@ def inject_css() -> None:
         border-radius: 12px;
         overflow: hidden;
     }
+
+    /* ── 언어 토글 ── */
+    .lang-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.8rem;
+        background: rgba(0,100,220,0.08);
+        border: 1px solid rgba(0,180,255,0.12);
+        border-radius: 8px;
+        margin-bottom: 0.8rem;
+    }
+    .lang-toggle-label {
+        font-size: 0.75rem;
+        color: #7090b0;
+        letter-spacing: 1px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -230,6 +260,7 @@ def init_session_state() -> None:
         "messages":     [],      # 채팅 히스토리 [{"role": ..., "content": ...}]
         "token":        "",      # JWT Bearer 토큰
         "current_page": "chat",  # Admin 전용 페이지 라우팅
+        "lang":         "ko",    # 언어 설정: 'ko' | 'en'
     }
     for key, value in _defaults.items():
         if key not in st.session_state:
@@ -255,13 +286,13 @@ def api_login(employee_num: str, password: str) -> Optional[dict]:
             return resp.json()
         
         # 디버깅 로그 노출 (핵심 방어)
-        st.error(f"서버 응답 오류 [{resp.status_code}]: {resp.text}")
+        st.error(f"{T('api_server_error')} [{resp.status_code}]: {resp.text}")
         return None
     except requests.exceptions.ConnectionError as e:
-        st.error(f"서버 연결 실패! 시도한 주소: {target_url} | 에러 내용: {e}")
+        st.error(f"{T('api_connection_fail')} {target_url} | {e}")
         return None
     except requests.exceptions.Timeout as e:
-        st.error(f"서버 응답 초과! 시도한 주소: {target_url} | 에러 내용: {e}")
+        st.error(f"{T('api_timeout')} {target_url} | {e}")
         return None
 
 
@@ -286,16 +317,16 @@ def api_chat(prompt: str, token: str) -> dict:
         if resp.status_code == 200:
             return {"ok": True, "response": resp.json()["response"]}
         elif resp.status_code == 403:
-            detail = resp.json().get("detail", "보안 정책 위반")
+            detail = resp.json().get("detail", T("api_security_violation"))
             return {"ok": False, "blocked": True, "detail": detail}
         elif resp.status_code == 401:
-            return {"ok": False, "blocked": False, "detail": "인증이 만료되었습니다. 다시 로그인해주세요."}
+            return {"ok": False, "blocked": False, "detail": T("api_auth_expired")}
         else:
-            return {"ok": False, "blocked": False, "detail": f"서버 오류 (HTTP {resp.status_code})"}
+            return {"ok": False, "blocked": False, "detail": f"{T('api_server_http_error')} (HTTP {resp.status_code})"}
     except requests.exceptions.ConnectionError:
-        return {"ok": False, "blocked": False, "detail": f"백엔드 서버에 연결할 수 없습니다. ({target_url})"}
+        return {"ok": False, "blocked": False, "detail": f"{T('api_backend_unreachable')} ({target_url})"}
     except requests.exceptions.Timeout:
-        return {"ok": False, "blocked": False, "detail": "응답 시간이 초과되었습니다."}
+        return {"ok": False, "blocked": False, "detail": T("api_response_timeout")}
 
 
 def api_admin_logs(token: str) -> list[dict]:
@@ -339,29 +370,29 @@ def render_login_view() -> None:
 
         with st.form("login_form", clear_on_submit=False):
             st.markdown(
-                "<p style='color:#7a9cc0;font-size:0.85rem;margin-bottom:1rem;'>"
-                "오토코어 임직원 인증 시스템입니다.<br>사번과 비밀번호를 입력하세요.</p>",
+                f"<p style='color:#7a9cc0;font-size:0.85rem;margin-bottom:1rem;'>"
+                f"{T('login_description')}</p>",
                 unsafe_allow_html=True,
             )
             employee_num = st.text_input(
-                "사번 (Employee Number)",
-                placeholder="예) EMP-001 또는 ADMIN-001",
+                T("login_emp_label"),
+                placeholder=T("login_emp_placeholder"),
                 key="login_emp",
             )
             password = st.text_input(
-                "비밀번호",
+                T("login_pw_label"),
                 type="password",
-                placeholder="비밀번호 입력",
+                placeholder=T("login_pw_placeholder"),
                 key="login_pw",
             )
 
-            submitted = st.form_submit_button("🔐 로그인", use_container_width=True)
+            submitted = st.form_submit_button(T("login_button"), use_container_width=True)
 
             if submitted:
                 if not employee_num or not password:
-                    st.error("사번과 비밀번호를 모두 입력해주세요.")
+                    st.error(T("login_empty_error"))
                 else:
-                    with st.spinner("인증 중..."):
+                    with st.spinner(T("login_spinner")):
                         result = api_login(employee_num, password)
 
                     if result:
@@ -373,17 +404,11 @@ def render_login_view() -> None:
                         st.session_state.messages      = []
                         st.rerun()
                     else:
-                        st.error("❌ 사번 또는 비밀번호가 올바르지 않습니다.")
+                        st.error(T("login_fail"))
 
         # 테스트 계정 안내
-        with st.expander("🔑 테스트 계정 안내", expanded=False):
-            st.markdown("""
-            | 사번 | 비밀번호 | 권한 |
-            |------|----------|------|
-            | `EMP-001` | `pass1234` | 일반 임직원 |
-            | `EMP-002` | `pass5678` | 일반 임직원 |
-            | `ADMIN-001` | `adminpass` | 보안 관리자 |
-            """)
+        with st.expander(T("login_test_title"), expanded=False):
+            st.markdown(T("login_test_table"))
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -409,9 +434,30 @@ def render_sidebar() -> None:
         <hr style="border-color:rgba(0,180,255,0.1);margin:0.8rem 0;">
         """, unsafe_allow_html=True)
 
+        # 🌐 언어 토글
+        lang_options = ["한국어", "English"]
+        current_lang_index = 0 if st.session_state.lang == "ko" else 1
+        selected_lang = st.radio(
+            "🌐 Language",
+            options=lang_options,
+            index=current_lang_index,
+            horizontal=True,
+            key="lang_radio",
+            label_visibility="collapsed",
+        )
+        new_lang = "ko" if selected_lang == "한국어" else "en"
+        if new_lang != st.session_state.lang:
+            st.session_state.lang = new_lang
+            st.rerun()
+
+        st.markdown(
+            "<hr style='border-color:rgba(0,180,255,0.1);margin:0.5rem 0;'>",
+            unsafe_allow_html=True,
+        )
+
         # 사용자 정보 카드
         role_badge_color = "#00b4ff" if st.session_state.role == "admin" else "#22d6a5"
-        role_label       = "보안 관리자" if st.session_state.role == "admin" else "임직원"
+        role_label       = T("sidebar_role_admin") if st.session_state.role == "admin" else T("sidebar_role_user")
         st.markdown(f"""
         <div style="background:rgba(0,100,220,0.08);border:1px solid rgba(0,180,255,0.12);
                     border-radius:10px;padding:0.8rem 1rem;margin-bottom:1rem;">
@@ -434,14 +480,14 @@ def render_sidebar() -> None:
         # Admin 전용 메뉴
         if st.session_state.role == "admin":
             st.markdown(
-                "<div style='font-size:0.75rem;color:#506070;letter-spacing:1px;"
-                "text-transform:uppercase;margin-bottom:0.5rem;'>메뉴</div>",
+                f"<div style='font-size:0.75rem;color:#506070;letter-spacing:1px;"
+                f"text-transform:uppercase;margin-bottom:0.5rem;'>{T('sidebar_menu_label')}</div>",
                 unsafe_allow_html=True,
             )
             page = st.radio(
                 "페이지 선택",
                 options=["chat", "dashboard"],
-                format_func=lambda x: "💬 AI 챗봇" if x == "chat" else "🛡️ 보안 대시보드",
+                format_func=lambda x: T("sidebar_page_chat") if x == "chat" else T("sidebar_page_dashboard"),
                 key="page_radio",
                 label_visibility="collapsed",
             )
@@ -452,7 +498,7 @@ def render_sidebar() -> None:
             )
 
         # 로그아웃 버튼
-        if st.button("🚪 로그아웃", use_container_width=True, key="logout_btn"):
+        if st.button(T("sidebar_logout"), use_container_width=True, key="logout_btn"):
             for key in ["logged_in", "role", "employee_num", "name",
                         "messages", "token", "current_page"]:
                 st.session_state[key] = (
@@ -472,14 +518,14 @@ def render_sidebar() -> None:
             r = requests.get(f"{API_URL}/health", timeout=2)
             if r.status_code == 200:
                 st.markdown(
-                    "<div style='font-size:0.75rem;color:#22d6a5;'>"
-                    "● 백엔드 연결됨</div>",
+                    f"<div style='font-size:0.75rem;color:#22d6a5;'>"
+                    f"{T('sidebar_backend_connected')}</div>",
                     unsafe_allow_html=True,
                 )
         except Exception:
             st.markdown(
-                "<div style='font-size:0.75rem;color:#ff5c7a;'>"
-                "● 백엔드 연결 안 됨</div>",
+                f"<div style='font-size:0.75rem;color:#ff5c7a;'>"
+                f"{T('sidebar_backend_disconnected')}</div>",
                 unsafe_allow_html=True,
             )
 
@@ -493,11 +539,10 @@ def render_chat_view() -> None:
     403 차단 응답은 붉은색 경고 배너로 렌더링.
     """
     # 헤더
-    st.markdown("""
-    <div class="section-title">💬 AI 어시스턴트</div>
+    st.markdown(f"""
+    <div class="section-title">{T('chat_title')}</div>
     <p style="color:#506880;font-size:0.85rem;margin-bottom:1.2rem;">
-        오토코어 AI 보안 게이트웨이를 통해 안전하게 질문하세요.<br>
-        기밀 데이터는 자동으로 보호됩니다.
+        {T('chat_description')}
     </p>
     """, unsafe_allow_html=True)
 
@@ -516,7 +561,7 @@ def render_chat_view() -> None:
             with st.chat_message("assistant", avatar="🚨"):
                 safe_content = html.escape(msg["content"])
                 st.markdown(
-                    f'<div class="block-banner">🚨 보안 정책에 의해 차단되었습니다: {safe_content}</div>',
+                    f'<div class="block-banner">{T("chat_blocked_banner")} {safe_content}</div>',
                     unsafe_allow_html=True,
                 )
         else:
@@ -530,7 +575,7 @@ def render_chat_view() -> None:
                 )
 
     # 채팅 입력 (st.chat_input 제약사항 준수)
-    if prompt := st.chat_input("질문을 입력하세요... (예: 다음 텍스트를 요약해줘 [대상: EMP-123, 내용: ...])"):
+    if prompt := st.chat_input(T("chat_input_placeholder")):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user", avatar="👤"):
             safe_prompt = html.escape(prompt)
@@ -541,7 +586,7 @@ def render_chat_view() -> None:
                 unsafe_allow_html=True,
             )
         with st.chat_message("assistant", avatar="🤖"):
-            with st.spinner("AI 보안 게이트웨이 처리 중..."):
+            with st.spinner(T("chat_spinner")):
                 result = api_chat(prompt, st.session_state.token)
             if result["ok"]:
                 response_text = result["response"]
@@ -557,7 +602,7 @@ def render_chat_view() -> None:
                 detail = result["detail"]
                 safe_detail = html.escape(detail)
                 st.markdown(
-                    f'<div class="block-banner">🚨 보안 정책에 의해 차단되었습니다: {safe_detail}</div>',
+                    f'<div class="block-banner">{T("chat_blocked_banner")} {safe_detail}</div>',
                     unsafe_allow_html=True,
                 )
                 st.session_state.messages.append({"role": "system_block", "content": detail})
@@ -574,10 +619,10 @@ def render_dashboard_view() -> None:
     1. st.dataframe()으로 전체 표 출력
     2. st.bar_chart()로 차단 사유별 통계 시각화
     """
-    st.markdown("""
-    <div class="section-title">🛡️ 보안 이벤트 대시보드</div>
+    st.markdown(f"""
+    <div class="section-title">{T('dash_title')}</div>
     <p style="color:#506880;font-size:0.85rem;margin-bottom:1.5rem;">
-        AI 보안 게이트웨이에서 탐지된 실시간 보안 이벤트 현황입니다.
+        {T('dash_description')}
     </p>
     """, unsafe_allow_html=True)
 
@@ -589,21 +634,21 @@ def render_dashboard_view() -> None:
         # 2. 성공적으로 가져왔다면 브라우저에 다운로드 버튼 표시
         if export_res.status_code == 200:
             st.download_button(
-                label="📥 테스트 데이터 전체 다운로드 (CSV)",
+                label=T("dash_download_btn"),
                 data=export_res.content,
                 file_name="autocore_logs.csv",
                 mime="text/csv",
                 type="primary"
             )
         else:
-            st.warning("CSV 데이터를 불러올 수 없습니다.")
+            st.warning(T("dash_download_fail"))
     except Exception as e:
-        st.error(f"다운로드 서버 연결 오류: {e}")
+        st.error(f"{T('dash_download_error')} {e}")
 
     # --- DB 로그 초기화 (테스트용) ---
-    with st.expander("⚠️ 위험 구역: DB 초기화 (테스트용)"):
-        st.warning("주의: 모든 보안 로그가 영구적으로 삭제됩니다. 반드시 CSV를 먼저 다운로드하세요.")
-        if st.button("🚨 모든 로그 삭제", type="primary"):
+    with st.expander(T("dash_danger_zone")):
+        st.warning(T("dash_danger_warning"))
+        if st.button(T("dash_delete_btn"), type="primary"):
             try:
                 res = requests.delete(
                     f"{API_URL}/admin/clear-logs",
@@ -611,19 +656,19 @@ def render_dashboard_view() -> None:
                     timeout=10,
                 )
                 if res.status_code == 200:
-                    st.toast("✅ 로그가 성공적으로 초기화되었습니다!", icon="🗑️")
+                    st.toast(T("dash_delete_success"), icon="🗑️")
                     time.sleep(1.5)
                     st.rerun()
                 else:
-                    st.error("초기화 실패: 백엔드 서버 오류")
+                    st.error(T("dash_delete_fail"))
             except Exception as e:
-                st.error(f"서버 연결 오류: {e}")
+                st.error(f"{T('api_server_conn_error')} {e}")
 
-    with st.spinner("보안 로그 불러오는 중..."):
+    with st.spinner(T("dash_loading")):
         logs = api_admin_logs(st.session_state.token)
 
     if not logs:
-        st.info("표시할 보안 로그가 없습니다. 채팅을 먼저 사용해 보세요.")
+        st.info(T("dash_no_logs"))
         return
 
     df = pd.DataFrame(logs)
@@ -648,46 +693,46 @@ def render_dashboard_view() -> None:
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-value metric-total">{total}</div>
-            <div class="metric-label">전체 이벤트</div>
+            <div class="metric-label">{T('dash_metric_total')}</div>
         </div>""", unsafe_allow_html=True)
     with c2:
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-value metric-blocked">{blocked}</div>
-            <div class="metric-label">🚫 차단</div>
+            <div class="metric-label">{T('dash_metric_blocked')}</div>
         </div>""", unsafe_allow_html=True)
     with c3:
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-value metric-masked">{masked}</div>
-            <div class="metric-label">🔒 마스킹</div>
+            <div class="metric-label">{T('dash_metric_masked')}</div>
         </div>""", unsafe_allow_html=True)
     with c4:
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-value metric-allowed">{allowed}</div>
-            <div class="metric-label">✅ 허용</div>
+            <div class="metric-label">{T('dash_metric_allowed')}</div>
         </div>""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── multiselect 필터 ───────────────────────────────────────────────────────
-    with st.expander("🔍 필터 옵션", expanded=True):
+    with st.expander(T("dash_filter_title"), expanded=True):
         fcol1, fcol2 = st.columns(2)
         with fcol1:
             selected_actions = st.multiselect(
-                "행위 유형 (action)",
+                T("dash_filter_action"),
                 options=sorted(df["action"].dropna().unique().tolist()),
                 default=[],
-                placeholder="전체 표시",
+                placeholder=T("dash_filter_placeholder"),
                 key="filter_action",
             )
         with fcol2:
             selected_threats = st.multiselect(
-                "탐지 위협 (카테고리)",
+                T("dash_filter_threat"),
                 options=sorted(df["threat_category"].dropna().unique().tolist()),
                 default=[],
-                placeholder="전체 표시",
+                placeholder=T("dash_filter_placeholder"),
                 key="filter_threat",
             )
 
@@ -705,7 +750,7 @@ def render_dashboard_view() -> None:
     if selected_actions or selected_threats:
         st.markdown(
             f"<p style='color:#7090b0;font-size:0.82rem;margin-bottom:0;'>"
-            f" 필터 적용: {total}건 → <b>{f_total}건</b> 표시</p>",
+            f" {T('dash_filter_applied')} {total} → <b>{f_total}</b> {T('dash_filter_shown')}</p>",
             unsafe_allow_html=True,
         )
 
@@ -715,21 +760,21 @@ def render_dashboard_view() -> None:
     clean_data = []
     for log in filtered_logs:
         clean_data.append({
-            "로그 ID": str(log.get("log_id", "")),
-            "발생 시각": str(log.get("timestamp", "")),
-            "사번": str(log.get("employee_num", "")),
-            "행위 유형": str(log.get("action", "")),
-            "탐지 위협": str(log.get("detected_threat", "")),
-            "처리 상태": str(log.get("status", ""))
+            T("col_log_id"): str(log.get("log_id", "")),
+            T("col_timestamp"): str(log.get("timestamp", "")),
+            T("col_employee"): str(log.get("employee_num", "")),
+            T("col_action"): str(log.get("action", "")),
+            T("col_threat"): str(log.get("detected_threat", "")),
+            T("col_status"): str(log.get("status", ""))
         })
 
     # ── 탭: 이벤트 로그 / 상세 처리 결과 / 통계 차트 ──────────────────────────────
-    tab_log, tab_detail, tab_chart = st.tabs(["📋 이벤트 로그", "🔍 상세 처리 결과", "📊 탐지 통계"])
+    tab_log, tab_detail, tab_chart = st.tabs([T("tab_event_log"), T("tab_detail"), T("tab_chart")])
 
     with tab_log:
         st.markdown(
-            "<p style='color:#506880;font-size:0.82rem;margin-bottom:0.8rem;'>"
-            f"필터된 {f_total}건 (모두 최신순 정렬)</p>",
+            f"<p style='color:#506880;font-size:0.82rem;margin-bottom:0.8rem;'>"
+            f"{f_total} {T('dash_filter_shown')}</p>",
             unsafe_allow_html=True,
         )
         st.dataframe(
@@ -737,14 +782,14 @@ def render_dashboard_view() -> None:
             use_container_width=True,
             hide_index=True,
             column_config={
-                "처리 상태": st.column_config.Column(width="small"),
-                "발생 시각": st.column_config.Column(width="medium"),
-                "탐지 위협": st.column_config.Column(width="large"),
+                T("col_status"): st.column_config.Column(width="small"),
+                T("col_timestamp"): st.column_config.Column(width="medium"),
+                T("col_threat"): st.column_config.Column(width="large"),
             },
         )
 
     with tab_detail:
-        st.text("각 보안 이벤트의 마스킹 치환 상세 내역입니다. MASKED 이벤트를 펼쳐서 확인하세요.")
+        st.text(T("detail_description"))
         for log in filtered_logs:
             log_id = str(log.get("log_id", ""))
             status_val = str(log.get("status", ""))
@@ -761,14 +806,14 @@ def render_dashboard_view() -> None:
                 if safe_orig:
                     col_orig, col_mask = st.columns(2)
                     with col_orig:
-                        st.text("▼ 원본 프롬프트")
+                        st.text(T("detail_original"))
                         st.markdown(
                             f"<div style='white-space: pre-wrap; word-break: break-word; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; font-family: monospace; line-height: 1.5;'>{safe_orig}</div>",
                             unsafe_allow_html=True
                         )
                     with col_mask:
-                        st.text("▼ 전송 프롬프트 (마스킹)")
-                        safe_masked_display = safe_masked if safe_masked else "(동일 — 기밀 미탐지)"
+                        st.text(T("detail_masked"))
+                        safe_masked_display = safe_masked if safe_masked else T("detail_same")
                         st.markdown(
                             f"<div style='white-space: pre-wrap; word-break: break-word; background-color: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; font-family: monospace; line-height: 1.5;'>{safe_masked_display}</div>",
                             unsafe_allow_html=True
@@ -789,11 +834,11 @@ def render_dashboard_view() -> None:
                     safe_mapping = ""
                 
                 if safe_mapping:
-                    st.text("🔐 마스킹 토큰 매핑 내역")
+                    st.text(T("detail_mapping"))
                     st.code(safe_mapping, language="json")
                 else:
                     if status_val != "BLOCKED":
-                        st.text("매핑 정보 없음 (기밀 데이터 미탐지)")
+                        st.text(T("detail_no_mapping"))
 
     with tab_chart:
         col_a, col_b = st.columns(2)
@@ -801,25 +846,27 @@ def render_dashboard_view() -> None:
 
         with col_a:
             st.markdown(
-                "<p style='color:#7090b0;font-size:0.85rem;font-weight:600;"
-                "margin-bottom:0.5rem;'>처리 상태별 건수</p>",
+                f"<p style='color:#7090b0;font-size:0.85rem;font-weight:600;"
+                f"margin-bottom:0.5rem;'>{T('chart_status_count')}</p>",
                 unsafe_allow_html=True,
             )
             if not chart_df.empty:
-                status_counts = chart_df["처리 상태"].value_counts().reset_index()
-                status_counts.columns = ["처리 상태", "건수"]
-                st.bar_chart(status_counts.set_index("처리 상태"), color="#00b4ff", use_container_width=True)
+                status_col = T("col_status")
+                status_counts = chart_df[status_col].value_counts().reset_index()
+                status_counts.columns = [status_col, "Count"]
+                st.bar_chart(status_counts.set_index(status_col), color="#00b4ff", use_container_width=True)
 
         with col_b:
             st.markdown(
-                "<p style='color:#7090b0;font-size:0.85rem;font-weight:600;"
-                "margin-bottom:0.5rem;'>사번별 행위 건수</p>",
+                f"<p style='color:#7090b0;font-size:0.85rem;font-weight:600;"
+                f"margin-bottom:0.5rem;'>{T('chart_emp_count')}</p>",
                 unsafe_allow_html=True,
             )
             if not chart_df.empty:
-                emp_counts = chart_df["사번"].value_counts().reset_index()
-                emp_counts.columns = ["사번", "건수"]
-                st.bar_chart(emp_counts.set_index("사번"), color="#0066ff", use_container_width=True)
+                emp_col = T("col_employee")
+                emp_counts = chart_df[emp_col].value_counts().reset_index()
+                emp_counts.columns = [emp_col, "Count"]
+                st.bar_chart(emp_counts.set_index(emp_col), color="#0066ff", use_container_width=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -832,7 +879,7 @@ def main() -> None:
     if not st.session_state.logged_in:
         # ── 비로그인: 로그인 화면 ────────────────────────────────────────
         # 상단 중앙 브랜드 타이틀
-        st.markdown("""
+        st.markdown(f"""
         <div style="text-align:center;padding:2.5rem 0 1rem;">
             <div style="font-size:2.5rem;font-weight:900;
                         background:linear-gradient(90deg,#00b4ff 0%,#0066ff 100%);
@@ -842,10 +889,29 @@ def main() -> None:
             </div>
             <div style="color:#3a5878;font-size:0.88rem;letter-spacing:2px;
                         text-transform:uppercase;margin-top:0.4rem;">
-                지능형 차세대 AI DLP 플랫폼
+                {T('login_subtitle')}
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+        # 로그인 전 언어 토글 (사이드바에 접근 불가하므로 메인 화면에 배치)
+        lang_col_l, lang_col_c, lang_col_r = st.columns([1, 1.4, 1])
+        with lang_col_c:
+            lang_options = ["한국어", "English"]
+            current_lang_index = 0 if st.session_state.lang == "ko" else 1
+            selected_lang = st.radio(
+                "🌐 Language",
+                options=lang_options,
+                index=current_lang_index,
+                horizontal=True,
+                key="lang_radio_login",
+                label_visibility="collapsed",
+            )
+            new_lang = "ko" if selected_lang == "한국어" else "en"
+            if new_lang != st.session_state.lang:
+                st.session_state.lang = new_lang
+                st.rerun()
+
         render_login_view()
 
     else:
