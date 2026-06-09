@@ -8,7 +8,10 @@ This document summarizes the performance, defense rate, and latency benchmark te
 
 * **Objective:** To prove the defense rate improvement of the Hybrid (V4) model compared to the legacy Regex-based (V1) solution, and to measure its prompt injection defense capabilities.
 * **Dataset Size:** A total of 1,200 automated script queries (a mix of normal queries, confidential data leaks, injection attacks, and evasion attacks).
-* **Test Environment:** Corporate laptop environment (Intel Ultra 7, 32GB RAM, No GPU).
+* **Test Environment:** Corporate laptop (Samsung Galaxy Book 6 Pro 16")
+  * **CPU:** Intel Core Ultra 7 358H (Panther Lake)
+  * **GPU:** Intel Arc B390 Integrated Graphics
+  * **RAM:** 32GB LPDDR5X (Unified Memory Architecture for CPU/GPU)
 * **Test Model:** Local `qwen2.5:7b` (running via Ollama).
 
 ---
@@ -40,8 +43,8 @@ The following are the core performance metrics obtained from the 1,200 automated
 
 The biggest hurdle when deploying a heavy LLM security system on a corporate network is latency. LLM Gateway drastically reduced this overhead through **Asynchronous Parallel Processing (`asyncio.gather`)**.
 
-### 3.1. [Environment A] CPU Execution (Initial Limitations)
-* **Environment:** Corporate laptop environment (Intel Ultra 7, No GPU)
+### 3.1. [Environment A] CPU Exclusive Execution (No GPU Acceleration)
+* **Environment:** CPU exclusive execution mode (Intel Arc GPU acceleration disabled)
 
 | Query Type | Cold Start | **Actual Operation (Warm State)** |
 |---|:---:|:---:|
@@ -52,7 +55,7 @@ The biggest hurdle when deploying a heavy LLM security system on a corporate net
 > **Analysis:** While severe latency occurs during the initial Cold Start when the local model is being loaded into RAM, it demonstrates an average processing speed of 1~3 seconds (max 9.7s) once it enters a Warm State.
 
 ### 3.2. [Environment B] GPU Execution (Proving Scalability)
-To verify the potential of the architecture when hardware limitations are removed, an additional test was conducted in a GPU environment (High-Performance mode) using the exact same codebase.
+To verify the potential of the architecture when hardware limitations are removed, an additional test was conducted by activating the **Intel Arc GPU acceleration** to enable parallel processing using the exact same codebase.
 
 | Query Environment | Cold Start | **Actual Operation (Warm State)** |
 |---|:---:|:---:|

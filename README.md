@@ -84,7 +84,7 @@ Logs and monitors all events (Allowed, Masked, Blocked) passing through the gate
 
 We validated the system's performance through a rigorous automated test set of 1,200 queries.
 
-| Metric | V1 (Regex Only) | V4 (CPU Env) | V4 (GPU Env) |
+| Metric | V1 (Regex Only) | V4 (CPU Exclusive) | V4 (GPU Accelerated) |
 |---|:---:|:---:|:---:|
 | **Overall Recall (Defense Rate)** | 26.7% | 78.33% | 77.60% |
 | **Precision** | ~100% | 99.86% | 99.70% |
