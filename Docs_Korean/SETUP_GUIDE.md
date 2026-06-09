@@ -127,3 +127,12 @@ docker-compose logs -f api
 
 ### Q. "GEMINI_API_KEY is not set" 에러가 발생하며 서버가 켜지지 않는다.
 > **A.** `.env` 파일이 생성되지 않았거나 파일명에 오타가 있는 경우이다. `.env.example` 파일을 복사하여 정확히 `.env` 라는 이름의 파일을 만들었는지 확인한다.
+
+---
+
+### 📚 전체 문서 목차
+1. [**메인 페이지 (README)**](../README_KO.md)
+2. [**시스템 아키텍처**](./ARCHITECTURE.md)
+3. [**설치 및 실행 가이드**](./SETUP_GUIDE.md) 📍 *현재 페이지*
+4. [**보안 테스트 가이드**](./SECURITY_TESTING.md)
+5. [**API 명세서**](./API_REFERENCE.md)

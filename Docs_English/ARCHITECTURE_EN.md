@@ -130,3 +130,12 @@ All services are containerized and deployed via `docker-compose.yml`.
 2. **Frontend (Streamlit):** Communicates with the API server over the internal Docker network.
 3. **Database (PostgreSQL):** Persistent data storage (Volume mounted).
 4. **Cache (Redis):** In-memory datastore. For security, we assigned a 5-minute (300 seconds) TTL, enforcing a Volatile design where token mapping data is completely wiped out when the session ends.
+
+---
+
+### 📚 Project Documentation
+1. [**Main README**](../README.md)
+2. [**System Architecture**](./ARCHITECTURE_EN.md) 📍 *You are here*
+3. [**Setup & Execution Guide**](./SETUP_GUIDE_EN.md)
+4. [**Security Testing Guide**](./SECURITY_TESTING_EN.md)
+5. [**API Reference**](./API_REFERENCE_EN.md)

@@ -142,3 +142,12 @@ Key HTTP status codes that must be handled by the frontend application during AP
 | `403 Forbidden` | Security Block / No Permission | Display a prominent red warning banner notifying the user of the 'Security Block' |
 | `500 Internal Error` | Server Internal Logic Error | Advise the user to try again later |
 | `503 / 504` | AI Server/Ollama Connection Failure or Delay | Display "Preparing AI Engine" or "Contact Administrator" |
+
+---
+
+### 📚 Project Documentation
+1. [**Main README**](../README.md)
+2. [**System Architecture**](./ARCHITECTURE_EN.md)
+3. [**Setup & Execution Guide**](./SETUP_GUIDE_EN.md)
+4. [**Security Testing Guide**](./SECURITY_TESTING_EN.md)
+5. [**API Reference**](./API_REFERENCE_EN.md) 📍 *You are here*

@@ -127,3 +127,12 @@ When the system boots for the first time, seed data is automatically inserted in
 
 ### Q. I see an error saying "GEMINI_API_KEY is not set".
 > **A.** This means you haven't created the `.env` file, or there is a typo inside it. Make sure you copied `.env.example` to `.env`.
+
+---
+
+### 📚 Project Documentation
+1. [**Main README**](../README.md)
+2. [**System Architecture**](./ARCHITECTURE_EN.md)
+3. [**Setup & Execution Guide**](./SETUP_GUIDE_EN.md) 📍 *You are here*
+4. [**Security Testing Guide**](./SECURITY_TESTING_EN.md)
+5. [**API Reference**](./API_REFERENCE_EN.md)
