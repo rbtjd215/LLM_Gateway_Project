@@ -31,6 +31,7 @@ This project proposes and implements an **AI Security Gateway Proxy** deployed w
 2. **Defense-in-Depth**: We constructed a 3-layer defense mechanism: Pattern Filter → Intent Classification → Generative Masking.
 3. **Dynamic Masking & De-masking**: Instead of outright blocking, confidential data is substituted with randomized tokens before being sent to the AI. Upon response, the gateway dynamically restores the original data, perfectly preserving the User Experience (UX).
 4. **AI-Native Threat Defense**: Utilizing the LLM-as-a-Judge technique, the system can understand context to block complex threats like prompt injections.
+5. **Global Accessibility (i18n)**: Features a seamless Korean/English language toggle in the UI, enabling global developers and evaluators to interact with the system intuitively.
 
 ---
 
