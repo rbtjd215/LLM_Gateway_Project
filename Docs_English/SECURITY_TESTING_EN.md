@@ -91,9 +91,9 @@ python scripts/analyze_final.py
 
 ---
 
-### 📚 Project Documentation
+### Project Documentation
 1. [**Main README**](../README.md)
 2. [**System Architecture**](./ARCHITECTURE_EN.md)
 3. [**Setup & Execution Guide**](./SETUP_GUIDE_EN.md)
-4. [**Security Testing Guide**](./SECURITY_TESTING_EN.md) 📍 *You are here*
+4. [**Security Testing Guide**](./SECURITY_TESTING_EN.md) 🔴 *You are here*
 5. [**API Reference**](./API_REFERENCE_EN.md)

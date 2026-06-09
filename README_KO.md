@@ -150,9 +150,9 @@ graph TD
 
 ---
 
-## 주요 문서 바로가기
-
-- [**LLM Security Gateway API 명세서 바로가기**](./Docs_Korean/API_REFERENCE.md)
-- [**LLM Security Gateway 시스템 아키텍처 바로가기**](./Docs_Korean/ARCHITECTURE.md)
-- [**LLM Security Gateway 보안 테스트 가이드 바로가기**](./Docs_Korean/SECURITY_TESTING.md)
-- [**LLM Security Gateway 설치 및 실행 가이드 바로가기**](./Docs_Korean/SETUP_GUIDE.md)
+## 전체 문서 목차
+1. [**메인 페이지 (README)**](./README_KO.md) 🔴 *현재 페이지*
+2. [**시스템 아키텍처**](./Docs_Korean/ARCHITECTURE.md)
+3. [**설치 및 실행 가이드**](./Docs_Korean/SETUP_GUIDE.md)
+4. [**보안 테스트 가이드**](./Docs_Korean/SECURITY_TESTING.md)
+5. [**API 명세서**](./Docs_Korean/API_REFERENCE.md)

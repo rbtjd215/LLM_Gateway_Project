@@ -24,7 +24,7 @@ As the enterprise adoption of Generative AI accelerates, the **unintentional lea
 
 ## 2. Architecture & 4 Core Design Principles
 
-This project proposes and implements an **AI Security Gateway Proxy** deployed within the corporate on-premise network ((for a generic corporate network)) that intercepts communication with external Commercial AIs.
+This project proposes and implements an **AI Security Gateway Proxy** deployed within a corporate on-premise network that intercepts communication with external Commercial AIs.
 
 ### Design Principles
 1. **100% Local Processing**: All security inspections (masking, intent classification) are processed by an on-premise local LLM, guaranteeing absolute data sovereignty.
@@ -148,9 +148,9 @@ To run the automated tests and view benchmark results, please refer to the [Secu
 
 ---
 
-## Documentation Shortcuts
-
-- [**LLM Security Gateway API Reference**](./Docs_English/API_REFERENCE_EN.md)
-- [**LLM Security Gateway System Architecture**](./Docs_English/ARCHITECTURE_EN.md)
-- [**LLM Security Gateway Security Testing Guide**](./Docs_English/SECURITY_TESTING_EN.md)
-- [**LLM Security Gateway Setup & Execution Guide**](./Docs_English/SETUP_GUIDE_EN.md)
+## Project Documentation
+1. [**Main README**](./README.md) 🔴 *You are here*
+2. [**System Architecture**](./Docs_English/ARCHITECTURE_EN.md)
+3. [**Setup & Execution Guide**](./Docs_English/SETUP_GUIDE_EN.md)
+4. [**Security Testing Guide**](./Docs_English/SECURITY_TESTING_EN.md)
+5. [**API Reference**](./Docs_English/API_REFERENCE_EN.md)
