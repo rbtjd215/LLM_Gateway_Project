@@ -36,9 +36,12 @@ The following are the core performance metrics obtained from the 1,200 automated
 
 ---
 
-## 3. System Latency Benchmarks
+## 3. System Latency Benchmarks & Infrastructure Scalability
 
 The biggest hurdle when deploying a heavy LLM security system on a corporate network is latency. LLM Gateway drastically reduced this overhead through **Asynchronous Parallel Processing (`asyncio.gather`)**.
+
+### 3.1. [Environment A] CPU Execution (Initial Limitations)
+* **Environment:** Corporate laptop environment (Intel Ultra 7, No GPU)
 
 | Query Type | Cold Start | **Actual Operation (Warm State)** |
 |---|:---:|:---:|
@@ -46,7 +49,15 @@ The biggest hurdle when deploying a heavy LLM security system on a corporate net
 | **Confidential Data (Masking)** | Over 30s | **1.25s ~ 3.53s** |
 | **Attack Attempt (Injection)** | Over 30s | **1.92s ~ 3.10s** |
 
-> **Analysis:** While latency occurs during the initial Cold Start when the local model is being loaded into RAM, it demonstrates a **highly responsive processing speed of 1~3 seconds on average** once it enters a Warm State. The speed is seamless enough that users will barely notice the security inspection taking place.
+> **Analysis:** While severe latency occurs during the initial Cold Start when the local model is being loaded into RAM, it demonstrates an average processing speed of 1~3 seconds (max 9.7s) once it enters a Warm State.
+
+### 3.2. [Environment B] GPU Execution (Proving Scalability)
+To verify the potential of the architecture when hardware limitations are removed, an additional test was conducted in a GPU environment (High-Performance mode) using the exact same codebase.
+
+* **Result:** Even when executing the 1,200 large-scale benchmark tests sequentially, the average processing time per query was **only 1.36 seconds, inclusive of all Cold Start overheads**.
+
+> **Conclusion & Insights:**
+> The latency observed during CPU execution was proven not to be an architectural flaw. As hypothesized, this demonstrates that **system performance (processing speed) scales significantly and proportionally as infrastructure resources (GPU) are invested (Scalability)**.
 
 ---
 

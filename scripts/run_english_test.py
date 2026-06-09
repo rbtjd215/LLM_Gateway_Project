@@ -9,18 +9,19 @@ from dotenv import load_dotenv
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_dir)
-sys.path.insert(0, script_dir)
+root_dir = os.path.dirname(script_dir)
+os.chdir(root_dir)
+sys.path.insert(0, root_dir)
 
 os.environ["ENGINE_MODE"] = "HF_PIPELINE"
-load_dotenv(os.path.join(script_dir, ".env"), override=True)
+load_dotenv(os.path.join(root_dir, ".env"), override=True)
 os.environ["OLLAMA_BASE_URL"] = "http://localhost:11434"
 
 from app.security_core import check_security, security_lifespan
 from fastapi import HTTPException
 
 # 파일 목록
-TEST_DIR = "tests/qa_tester/test_data"
+TEST_DIR = os.path.join(root_dir, "tests", "qa_tester", "test_data")
 ENGLISH_FILES = [
     "phase1_English.csv", # Phase 1: NORMAL
     "phase2_English.csv", # Phase 2: LEAK_PLAIN (기밀 유출)

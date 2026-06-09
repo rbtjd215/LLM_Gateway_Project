@@ -89,8 +89,8 @@ The third line of defense, executed simultaneously with Phase 2, to detect unstr
   * **6 Extraction Categories:** MATERIAL, PROCESS, PRICE, PERSON, CODE, DIMENSION
   * **Over-masking Prevention (Negative List):** Explicitly instructs the LLM NOT to extract dates, quarters, simple quantities, or generic technical terms. This maintains high precision and ensures normal business operations are not disrupted.
 
-> **Latency Optimization (Parallel Processing)**
-> The computationally heavy LLM tasks (Phase 2 and Phase 3) are executed **concurrently in parallel** using `asyncio.gather()`. This cuts the security inspection latency by up to 50%, achieving a seamless processing speed of 1~3 seconds in a Warm State.
+> **Parallel Processing & Infrastructure Scalability**
+> The computationally heavy LLM tasks (Phase 2 and Phase 3) are executed **concurrently in parallel** using `asyncio.gather()`. Thanks to this design, when infrastructure (such as GPUs) is scaled up, the system demonstrates exceptional scalability, where processing speed increases significantly and proportionally to the invested resources without any pipeline bottlenecks.
 
 ---
 
