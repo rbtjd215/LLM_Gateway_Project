@@ -55,7 +55,7 @@ The biggest hurdle when deploying a heavy LLM security system on a corporate net
 > **Analysis:** While severe latency occurs during the initial Cold Start when the local model is being loaded into RAM, it demonstrates an average processing speed of 1~3 seconds (max 9.7s) once it enters a Warm State.
 
 ### 3.2. [Environment B] GPU Execution (Proving Scalability)
-To verify the potential of the architecture when hardware limitations are removed, an additional test was conducted by activating the **Intel Arc GPU acceleration** to enable parallel processing using the exact same codebase.
+To verify the potential of the architecture when hardware limitations are removed, an additional test was conducted by activating the **Intel Arc GPU acceleration (Offloading)** using the exact same codebase.
 
 | Query Environment | Cold Start | **Actual Operation (Warm State)** |
 |---|:---:|:---:|
