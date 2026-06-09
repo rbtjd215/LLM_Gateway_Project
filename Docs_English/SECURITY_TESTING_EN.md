@@ -25,14 +25,14 @@ The following are the core performance metrics obtained from the 1,200 automated
 | **Precision** | ~100% | **99.86%** | 🔹 Near-zero Business Disruption |
 | **False Positive Rate (FPR)** | 0.0% | **0.08%** (1 in 1,200) | 🔹 Well within practical tolerance |
 
-### Highlight: 0% Korean False Positive Rate (Zero Business Disruption)
+### Language-specific Metrics
 
-| Language | Precision | Recall | Accuracy |
-|---|---:|---:|---:|
-| **English** | 99.72% | 79.33% | 84.33% |
-| **Korean** | **100.00%** | 77.33% | 83.00% |
+| Language | Precision | Recall | Accuracy | False Positive Rate (FPR) |
+|---|---:|---:|---:|---:|
+| **English** | 99.72% | 79.33% | 84.33% | 0.28% |
+| **Korean** | 100.00% | 77.33% | 83.00% | 0.00% |
 
-> **Analysis:** Based on the Korean dataset, there was **not a single False Positive** (cases where normal business queries are mistakenly classified as threats and blocked). This indicates that the Fail-Closed policy applied to the gateway operates with extreme stability, ensuring that employees' legitimate use of AI is never disrupted.
+> **Analysis:** The overall False Positive Rate (FPR) is extremely low, averaging 0.14% (0.00% for Korean, 0.28% for English). This proves that despite applying a strict Fail-Closed policy, cases where normal business queries are mistakenly blocked (business disruption) occur very rarely, demonstrating a high level of availability suitable for real-world enterprise deployment.
 
 ---
 
@@ -54,7 +54,11 @@ The biggest hurdle when deploying a heavy LLM security system on a corporate net
 ### 3.2. [Environment B] GPU Execution (Proving Scalability)
 To verify the potential of the architecture when hardware limitations are removed, an additional test was conducted in a GPU environment (High-Performance mode) using the exact same codebase.
 
-* **Result:** Even when executing the 1,200 large-scale benchmark tests sequentially, the average processing time per query was **only 1.36 seconds, inclusive of all Cold Start overheads**.
+| Query Environment | Cold Start | **Actual Operation (Warm State)** |
+|---|:---:|:---:|
+| **GPU Accelerated** | Instant Load (Shortened) | **Avg 1.36s** |
+
+* **Result Details:** Even when executing the 1,200 large-scale benchmark tests sequentially, the system seamlessly processed all query types with an average processing time of 1.36 seconds per query, inclusive of all cold start overheads.
 
 > **Conclusion & Insights:**
 > The latency observed during CPU execution was proven not to be an architectural flaw. As hypothesized, this demonstrates that **system performance (processing speed) scales significantly and proportionally as infrastructure resources (GPU) are invested (Scalability)**.
@@ -71,7 +75,7 @@ A defense rate of 78.33% implies that **the system misses approximately 21.67% o
 
 ### Conclusion: A Limitation of the Engine, Not a Flaw in the Architecture
 These missed detections are **inherent inference limitations of the 7B small-scale model itself**, not a defect in the 3-phase hybrid architecture proposed by this research.
-* The 99.86% precision proves that the defense architecture (the "chassis" of the car) is flawlessly designed.
+* The 99.86% precision proves that the defense architecture (the "chassis" of the car) is highly robust and well-designed.
 * By simply introducing high-end GPU servers in the future and **swapping to a 70B+ large-scale model (a "powerful engine"), the defense rate can immediately scale to over 90%**, proving the highly scalable nature of this architecture.
 
 ## 5. How to Run Security Tests
