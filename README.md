@@ -62,19 +62,19 @@ graph TD
 ### 1) Normal Query & Dynamic Masking (UX Preservation)
 When a user asks a question containing confidential data, the gateway masks it into a randomized token before sending it to the external AI. The received answer is then perfectly de-masked back to its original state.
 
-> ![Chat UI](assets/captures/2-1%20웹%20브라우저.png)
+> ![Chat UI](assets/captures/chat_en.png)
 > *[UI] Streamlit-based dark theme chat interface*
 
 ### 2) Prompt Injection Defense
 Contexts attempting to ignore previous instructions or demanding admin privileges are intercepted and blocked.
 
-> ![Block Screen](assets/captures/4-1웹%20브라우저.png)
+> ![Block Screen](assets/captures/blocked_en.png)
 > *[Defense] Malicious intent blocked by LLM-as-a-Judge (Red warning banner)*
 
 ### 3) Admin Security Dashboard
 Logs and monitors all events (Allowed, Masked, Blocked) passing through the gateway in real-time, matching original prompts with their masked counterparts.
 
-> ![Dashboard](assets/captures/5-1%20관리자%20보드.png)
+> ![Dashboard](assets/captures/dashboard_en.png)
 > *[Logging] Admin panel to audit tokenized data and original text mappings*
 
 ---
