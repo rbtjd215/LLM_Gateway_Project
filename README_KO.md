@@ -1,6 +1,6 @@
 # LLM-based Hybrid AI Security Gateway
 
-👉 **[Read in English](README.md)**
+-> **[Read in English](README.md)**
 > **프롬프트 인젝션 방어와 기밀 데이터 비식별화를 위한 PoC(Proof of Concept)**
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)

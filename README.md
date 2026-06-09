@@ -1,6 +1,6 @@
 # LLM-based Hybrid AI Security Gateway
 
-👉 **[한국어 문서 보기 (Read in Korean)](README_KO.md)**
+-> **[한국어 문서 보기 (Read in Korean)](README_KO.md)**
 > **Proof of Concept (PoC) for Prompt Injection Defense and Confidential Data De-identification**
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
